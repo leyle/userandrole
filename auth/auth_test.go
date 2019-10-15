@@ -44,7 +44,7 @@ func TestAuthLoginAndRole(t *testing.T) {
 
 	token := "QVJNRERxQ3ZQT1pGeXlYU3YtMndMTlJfQ0lkaUZkTzZzUURPbTZTaFNGYlpTN3RzLXdyUXRwV0lzb211ZU1ZbWFDbmhDckVqSGJJNHd3eldGZG82c3c="
 	method := "GET"
-	uri := "/api/item/b"
+	uri := "/api/item/ff/"
 
 	ar := AuthLoginAndRole(opt, token, method, uri, "")
 

@@ -8,6 +8,7 @@ import (
 	"github.com/leyle/userandrole/userandrole"
 	"github.com/leyle/userandrole/userapp"
 	. "github.com/leyle/ginbase/consolelog"
+	"regexp"
 	"strings"
 )
 
@@ -42,9 +43,9 @@ const (
 	AuthResultOK = 9 // 验证成功
 )
 type AuthResult struct {
-	Result int `json:"result"` // 验证结果，见上面字典
-	User *userapp.User `json:"user"` // 用户信息
-	Role []*roleapp.Role `json:"role"` // 角色信息
+	Result int           `json:"result"` // 验证结果，见上面字典
+	User *userapp.User   `json:"user"`   // 用户信息
+	Role []*roleapp.Role `json:"role"`   // 角色信息
 }
 
 func NewAuthResult() *AuthResult {
@@ -147,6 +148,17 @@ func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
 
 		// 包含通配符，需要正则校验
 		if strings.Contains(uri, "*") {
+			uri = strings.ReplaceAll(uri, "*", "\\w+")
+			uri := "^" + uri + "$"
+			re, err := regexp.Compile(uri)
+			if err != nil {
+				Logger.Errorf("", "检查用户权限时，系统配置错误，无法 compile 正则表达式, %s", err.Error())
+				return false
+			}
+			match := re.MatchString(path)
+			if match {
+				return true
+			}
 
 		} else {
 			// 否则直接对比

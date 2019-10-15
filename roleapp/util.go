@@ -3,7 +3,9 @@ package roleapp
 import (
 	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/ginbase/dbandmq"
+	"github.com/leyle/ginbase/util"
 	"gopkg.in/mgo.v2/bson"
+	"strings"
 	"sync"
 )
 
@@ -147,4 +149,125 @@ func UnWrapRoles(roles []*Role) []*Item {
 	}
 
 	return items
+}
+
+// 生成一个 admin 账户 role
+func InsuranceAdminRole(db *dbandmq.Ds) (*Role, error) {
+	// items
+	itemNames := []string{
+		AdminItemName + "GET",
+		AdminItemName + "POST",
+		AdminItemName + "PUT",
+		AdminItemName + "DELETE",
+		AdminItemName + "PATCH",
+		AdminItemName + "OPTION",
+		AdminItemName + "HEAD",
+	}
+
+	var itemIds []string
+	for _, itemName := range itemNames {
+		item, err := addAdminItem(db, itemName)
+		if err != nil {
+			return nil, err
+		}
+		itemIds = append(itemIds, item.Id)
+	}
+
+	// permission
+	permission, err := addAdminPermission(db, itemIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// role
+	role, err := addAdminRole(db, []string{permission.Id})
+	if err != nil {
+		return nil, err
+	}
+
+	Logger.Infof("", "启动roleapp，初始化adminrole成功，roleId[%s]", role.Id)
+	return role, nil
+}
+
+func addAdminItem(db *dbandmq.Ds, itemName string) (*Item, error) {
+	item, err := GetItemByName(db, itemName)
+	if err != nil {
+		return nil, err
+	}
+
+	if item == nil {
+		tmp := strings.Split(itemName, ":")
+		method := tmp[1]
+		item = &Item{
+			Id:       util.GenerateDataId(),
+			Name:     itemName,
+			Method:   method,
+			Path:     "*",
+			Resource: "*",
+			Menu:     "*",
+			Button:   "*",
+			Deleted:  false,
+			History:  nil,
+			CreateT:  util.GetCurTime(),
+		}
+		item.UpdateT = item.CreateT
+
+		err = SaveItem(db, item)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return item, nil
+}
+
+func addAdminPermission(db *dbandmq.Ds, itemIds []string) (*Permission, error) {
+	permission, err := GetPermissionByName(db, AdminPermissionName, false)
+	if err != nil {
+		return nil, err
+	}
+	if permission == nil {
+		permission = &Permission{
+			Id:      util.GenerateDataId(),
+			Name: AdminPermissionName,
+			ItemIds: itemIds,
+			Menu:    "*",
+			Button:  "*",
+			Deleted: false,
+			CreateT: util.GetCurTime(),
+		}
+		permission.UpdateT = permission.CreateT
+		err = SavePermission(db, permission)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return permission, nil
+}
+
+func addAdminRole(db *dbandmq.Ds, pids []string) (*Role, error) {
+	role, err := GetRoleByName(db, AdminRoleName, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if role == nil {
+		role = &Role{
+			Id:            util.GenerateDataId(),
+			Name:          AdminRoleName,
+			PermissionIds: pids,
+			Menu:          "*",
+			Button:        "*",
+			Deleted:       false,
+			CreateT:       util.GetCurTime(),
+		}
+		role.UpdateT = role.CreateT
+		err = SaveRole(db, role)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return role, nil
 }

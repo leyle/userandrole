@@ -3,4 +3,4 @@
 *.pyc
 __pycache__/
 logs/
-test/test
+cmd/userandrole/userandrole

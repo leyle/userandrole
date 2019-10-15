@@ -6,6 +6,7 @@ import (
 	"github.com/go-redis/redis"
 	jsoniter "github.com/json-iterator/go"
 	. "github.com/leyle/ginbase/consolelog"
+	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/util"
 	"strconv"
 	"strings"
@@ -77,6 +78,19 @@ func SaveToken(r *redis.Client, token string, user *User) error {
 	return nil
 }
 
+// 删除token
+func DeleteToken(r *redis.Client, userId string) error {
+	key := TokenRedisPrefix + userId
+	_, err := r.Del(key).Result()
+	if err != nil && err != redis.Nil {
+		Logger.Errorf("", "移除用户[%s]token失败, %s", userId, err.Error())
+		return err
+	}
+
+	Logger.Infof("", "移除用户[%s]token成功", userId)
+	return nil
+}
+
 // 验证 token
 func CheckToken(r *redis.Client, token string) (*TokenVal, error) {
 	// 先解析 token
@@ -102,4 +116,66 @@ func CheckToken(r *redis.Client, token string) (*TokenVal, error) {
 	}
 
 	return tkVal, nil
+}
+
+// 确保系统启动时包含了系统管理员账户
+func InsureAdminAccount(db *dbandmq.Ds) (*User, error) {
+	user, err := GetUserByLoginId(db, AdminLoginId)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		// 新建初始化账户
+		user, err = initAdminAccount(db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	Logger.Infof("", "启动userapp，init admin 账户成功，userId[%s]", user.Id)
+
+	return user, nil
+}
+
+func initAdminAccount(db *dbandmq.Ds) (*User, error) {
+	salt := util.GenerateDataId()
+	p := AdminLoginPasswd + salt
+	hashP := util.Sha256(p)
+
+	user := &User{
+		Id:        util.GenerateDataId(),
+		Name:      AdminLoginId,
+		CreateT:   util.GetCurTime(),
+	}
+	user.UpdateT = user.CreateT
+
+	ulpa := &UserLoginIdPasswdAuth{
+		Id:      util.GenerateDataId(),
+		UserId:  user.Id,
+		LoginId: AdminLoginId,
+		Salt:    salt,
+		Passwd:  hashP,
+		Init: true,
+		CreateT: user.CreateT,
+		UpdateT: user.CreateT,
+	}
+
+	err := db.C(CollectionNameUser).Insert(user)
+	if err != nil {
+		Logger.Errorf("", "初始化系统admin账户，存储user表失败, %s", err.Error())
+		return nil, err
+	}
+
+	err = db.C(CollectionNameIdPasswd).Insert(ulpa)
+	if err != nil {
+		Logger.Errorf("", "初始化系统admin账户，存储账户密码表失败, %s", err.Error())
+		return nil, err
+	}
+
+	user.LoginType = LoginTypeIdPasswd
+	user.IdPasswd = ulpa
+
+	Logger.Infof("", "初始化系统admin账户成功，用户id[%s]", user.Id)
+	return user, nil
 }

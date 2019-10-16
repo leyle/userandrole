@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/leyle/ginbase/dbandmq"
+	"github.com/leyle/userandrole/config"
 )
 
 // 角色路由
@@ -175,6 +176,19 @@ func UserWithRoleRouter(db *dbandmq.Ds, g *gin.RouterGroup) {
 		// 搜索已经授权的用户列表
 		uwrR.GET("/users", func(c *gin.Context) {
 			QueryUWRHandler(c, db)
+		})
+	}
+}
+
+// 系统配置
+func SystemConfRouter(conf *config.Config, g *gin.RouterGroup) {
+	sysR := g.Group("/sys", func(c *gin.Context) {
+		Auth(c)
+	})
+	{
+		// 读取 redis 和 mongodb 配置
+		sysR.GET("/conf", func(c *gin.Context) {
+			GetMongodbAndRedisConfHandler(c, conf)
 		})
 	}
 }

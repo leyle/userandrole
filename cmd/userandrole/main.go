@@ -6,6 +6,7 @@ import (
 	"github.com/leyle/ginbase/middleware"
 	"github.com/leyle/userandrole/api"
 	. "github.com/leyle/userandrole/auth"
+	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userandrole"
 	"os"
 )
@@ -34,7 +35,15 @@ func main() {
 	db := dbandmq.NewDs(mgo)
 	defer db.Close()
 
+	// 初始化 admin 和相关权限
 	err = userandrole.InitAdminWithRole(db)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// 初始化普通用户角色
+	_, err = roleapp.InsuranceDefaultRole(db)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)

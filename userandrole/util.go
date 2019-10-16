@@ -26,7 +26,7 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 		// 用户没有任何授权，返回默认角色
 		uwr = &UserWithRole{
 			Id:       util.GenerateDataId(),
-			UserId:   "",
+			UserId:   userId,
 			UserName: "",
 			Avatar:   "",
 			RoleIds:  []string{roleapp.DefaultRoleId},

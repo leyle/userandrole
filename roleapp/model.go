@@ -14,7 +14,7 @@ import (
 // 简单处理，不允许继承
 
 // 程序启动时，初始化出来的
-const DefaultRoleName = "DEFAULT:未做任何角色赋值的用户的角色"
+const DefaultRoleName = "注册用户默认角色"
 var DefaultRoleId = ""
 
 const (

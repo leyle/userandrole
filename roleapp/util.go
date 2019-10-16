@@ -275,3 +275,32 @@ func addAdminRole(db *dbandmq.Ds, pids []string) (*Role, error) {
 
 	return role, nil
 }
+
+// 生成一个默认的普通role
+// 这里只需要占位，后面通过接口和页面去配置注册用户的相关权限
+func InsuranceDefaultRole(db *dbandmq.Ds) (*Role, error) {
+	role, err := GetRoleByName(db, DefaultRoleName, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if role == nil {
+		role = &Role{
+			Id:            util.GenerateDataId(),
+			Name:          DefaultRoleName,
+			Deleted:       false,
+			CreateT:       util.GetCurTime(),
+		}
+		role.UpdateT = role.CreateT
+		err = SaveRole(db, role)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// 把 role.id 赋值给默认值
+	DefaultRoleId = role.Id
+
+	Logger.Infof("", "启动roleapp，初始化普通用户role成功，roleId[%s]", role.Id)
+	return role, nil
+}

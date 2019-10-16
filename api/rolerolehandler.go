@@ -198,6 +198,7 @@ func UpdateRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 }
 
 // 删除 role
+// 注册用户 role 和 admin role 不能删除 todo
 func DeleteRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	id := c.Param("id")
 

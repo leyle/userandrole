@@ -45,3 +45,7 @@ func GetUserWithRoleByUserId(db *dbandmq.Ds, userId string) (*UserWithRole, erro
 func SaveUserWithRole(db *dbandmq.Ds, uwr *UserWithRole) error {
 	return db.C(CollectionNameUserWithRole).Insert(uwr)
 }
+
+func UpdateUserWithRole(db *dbandmq.Ds, uwr *UserWithRole) error {
+	return db.C(CollectionNameUserWithRole).UpdateId(uwr.Id, uwr)
+}

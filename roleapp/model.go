@@ -166,7 +166,32 @@ func GetPermissionByName(db *dbandmq.Ds, name string, more bool) (*Permission, e
 	}
 
 	if more {
-		// todo
+		items, err := GetItemsByItemIds(db, p.ItemIds)
+		if err == nil {
+			p.Items = items
+		}
+	}
+
+	return p, nil
+}
+
+func GetPermissionById(db *dbandmq.Ds, id string, more bool) (*Permission, error) {
+	var p *Permission
+	err := db.C(CollectionPermissionName).FindId(id).One(&p)
+	if err != nil && err != mgo.ErrNotFound {
+		Logger.Errorf("", "根据 permission id[%s]读取permission信息失败, %s", id, err.Error())
+		return nil, err
+	}
+
+	if p == nil {
+		return nil, nil
+	}
+
+	if more {
+		items, err := GetItemsByItemIds(db, p.ItemIds)
+		if err == nil {
+			p.Items = items
+		}
 	}
 
 	return p, nil
@@ -175,6 +200,10 @@ func GetPermissionByName(db *dbandmq.Ds, name string, more bool) (*Permission, e
 // 存储 permission
 func SavePermission(db *dbandmq.Ds, p *Permission) error {
 	return db.C(CollectionPermissionName).Insert(p)
+}
+
+func UpdatePermission(db *dbandmq.Ds, p *Permission) error {
+	return db.C(CollectionPermissionName).UpdateId(p.Id, p)
 }
 
 // 根据 name 读取 role
@@ -195,7 +224,32 @@ func GetRoleByName(db *dbandmq.Ds, name string, more bool) (*Role, error) {
 	}
 
 	if more {
-		// todo
+		ps, err := GetPermissionsByPermissionIds(db, role.PermissionIds)
+		if err == nil {
+			role.Permissions = ps
+		}
+	}
+
+	return role, nil
+}
+
+func GetRoleById(db *dbandmq.Ds, id string, more bool) (*Role, error) {
+	var role *Role
+	err := db.C(CollectionNameRole).FindId(id).One(&role)
+	if err != nil && err != mgo.ErrNotFound {
+		Logger.Errorf("", "根据role id[%s]读取role信息失败, %s", id, err.Error())
+		return nil, err
+	}
+
+	if role == nil {
+		return nil, nil
+	}
+
+	if more {
+		ps, err := GetPermissionsByPermissionIds(db, role.PermissionIds)
+		if err == nil {
+			role.Permissions = ps
+		}
 	}
 
 	return role, nil
@@ -203,4 +257,8 @@ func GetRoleByName(db *dbandmq.Ds, name string, more bool) (*Role, error) {
 
 func SaveRole(db *dbandmq.Ds, role *Role) error {
 	return db.C(CollectionNameRole).Insert(role)
+}
+
+func UpdateRole(db *dbandmq.Ds, role *Role) error {
+	return db.C(CollectionNameRole).UpdateId(role.Id, role)
 }

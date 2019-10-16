@@ -115,6 +115,10 @@ func fullPermission(wg *sync.WaitGroup, db *dbandmq.Ds, permission *Permission, 
 
 // 根据 itemIds 读取 items 信息
 func GetItemsByItemIds(db *dbandmq.Ds, itemIds []string) ([]*Item, error) {
+	if len(itemIds) == 0 {
+		return nil, nil
+	}
+
 	f := bson.M{
 		"deleted": false,
 		"_id": bson.M{

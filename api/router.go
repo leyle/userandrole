@@ -57,7 +57,7 @@ func RoleRouter(db *dbandmq.Ds, g *gin.RouterGroup) {
 
 		// 给权限取消某个或某些 item，可多个
 		permissionR.POST("/:id/delitems", func(c *gin.Context) {
-			RemoteItemFromPermissionHandler(c, db)
+			RemoveItemFromPermissionHandler(c, db)
 		})
 
 		// 修改权限基本信息

@@ -2,12 +2,12 @@ package roleapp
 
 import (
 	"fmt"
+	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/util"
 	"github.com/leyle/userandrole/ophistory"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	. "github.com/leyle/ginbase/consolelog"
 )
 
 // role -> permissions -> items
@@ -126,15 +126,9 @@ func UpdateItem(db *dbandmq.Ds, item *Item) error {
 // 删除指定 id 的 item
 // 不需要单独的去删除包含了自己的 permission 中的数据
 // permission 中会标记这个数据，并且不做显示
-func DeleteItemById(db *dbandmq.Ds, id, userId, userName string) error {
+func DeleteItemById(db *dbandmq.Ds, userId, userName, id string) error {
 	opAction := fmt.Sprintf("删除 item, itemId[%s]", id)
-	opHis := &ophistory.OperationHistory{
-		Id:       util.GenerateDataId(),
-		UserId:   userId,
-		UserName: userName,
-		Action:   opAction,
-		T:        util.GetCurTime(),
-	}
+	opHis := ophistory.NewOpHistory(userId, userName, opAction)
 
 	update := bson.M{
 		"$set": bson.M{

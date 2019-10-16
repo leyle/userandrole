@@ -43,9 +43,9 @@ const (
 	AuthResultOK = 9 // 验证成功
 )
 type AuthResult struct {
-	Result int           `json:"result"` // 验证结果，见上面字典
-	User *userapp.User   `json:"user"`   // 用户信息
-	Role []*roleapp.Role `json:"role"`   // 角色信息
+	Result int             `json:"result"` // 验证结果，见上面字典
+	User   *userapp.User   `json:"user"`   // 用户信息
+	Roles  []*roleapp.Role `json:"roles"`   // 角色信息
 }
 
 func NewAuthResult() *AuthResult {
@@ -73,13 +73,13 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 	roles, err := AuthRole(newAo, user.Id, method, uri, resource)
 	if err != nil {
 		if err == NoPermission {
-			ar.Role = roles
+			ar.Roles = roles
 		}
 		ar.Result = AuthResultInValidRole
 		return ar
 	}
 
-	ar.Role = roles
+	ar.Roles = roles
 	ar.Result = AuthResultOK
 
 	return ar

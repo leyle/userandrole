@@ -36,7 +36,7 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	defer db.Close()
 
 	name := form.Name
-	// 检查 name 是否重复
+	// 检查 name 是否重复，不用加锁，假设不冲突
 	dbitem, err := roleapp.GetItemByName(db, name)
 	middleware.StopExec(err)
 	if dbitem != nil {
@@ -62,17 +62,12 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	hisAction := fmt.Sprintf("新建 role item, item id[%s], item name[%s]", item.Id, item.Name)
 	curUser, _ := GetCurUserAndRole(c)
 	if curUser == nil {
-		middleware.StopExec(errors.New("系统内部错误，无法识别到当前用户"))
+		middleware.StopExec(errors.New("获取当前用户信息失败"))
 	}
-
-	opHis := &ophistory.OperationHistory{
-		Id:       util.GenerateDataId(),
-		UserId:   curUser.Id,
-		UserName: curUser.Name,
-		Action:  hisAction,
-		T:        util.GetCurTime(),
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, hisAction)
+	if opHis != nil {
+		item.History = append(item.History, opHis)
 	}
-	item.History = append(item.History, opHis)
 
 	err = roleapp.SaveItem(db, item)
 	middleware.StopExec(err)
@@ -123,17 +118,12 @@ func UpdateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	hisAction := fmt.Sprintf("修改 item，传递的数据是, %s", hdata)
 	curUser, _ := GetCurUserAndRole(c)
 	if curUser == nil {
-		middleware.StopExec(errors.New("系统内部错误，无法识别到当前用户"))
+		middleware.StopExec(errors.New("获取当前用户信息失败"))
 	}
-
-	opHis := &ophistory.OperationHistory{
-		Id:       util.GenerateDataId(),
-		UserId:   curUser.Id,
-		UserName: curUser.Name,
-		Action:  hisAction,
-		T:        util.GetCurTime(),
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, hisAction)
+	if opHis != nil {
+		dbitem.History = append(dbitem.History, opHis)
 	}
-	dbitem.History = append(dbitem.History, opHis)
 
 	err = roleapp.UpdateItem(db, dbitem)
 	middleware.StopExec(err)
@@ -154,7 +144,7 @@ func DeleteItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	db := ds.CopyDs()
 	defer db.Close()
 
-	err := roleapp.DeleteItemById(db, id, curUser.Id, curUser.Name)
+	err := roleapp.DeleteItemById(db, curUser.Id, curUser.Name, id)
 	middleware.StopExec(err)
 
 	returnfun.ReturnOKJson(c, "")

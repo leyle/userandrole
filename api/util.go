@@ -3,19 +3,19 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/middleware"
 	"github.com/leyle/ginbase/returnfun"
 	"github.com/leyle/userandrole/auth"
-	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userapp"
 )
 
 // 系统配置，主要是系统校验方面
 // 需要初始化这个
-var AuthOption = &auth.Option{}
-const AuthResult = "AUTHRESULT"
+var AuthOption = &auth.Option{} // 调用本包，需要给这个变量赋值
+const AuthResultCtxKey = "AUTHRESULT"
 
 type UserOption struct {
 	Ds *dbandmq.Ds
@@ -33,8 +33,10 @@ func Auth(c *gin.Context) {
 	}
 
 	result := auth.AuthLoginAndRole(AuthOption, token, c.Request.Method, c.Request.RequestURI, "")
+	debugPrintUserRoleInfo(c, result)
+
 	if result.Result == auth.AuthResultOK {
-		c.Set(AuthResult, result)
+		c.Set(AuthResultCtxKey, result)
 	} else if result.Result == auth.AuthResultInValidToken {
 		returnfun.Return401Json(c, "Invalid token")
 		c.Next()
@@ -49,11 +51,29 @@ func Auth(c *gin.Context) {
 }
 
 func GetCurUserAndRole(c *gin.Context) (*userapp.User, []*roleapp.Role) {
-	ar, exist := c.Get(AuthResult)
+	ar, exist := c.Get(AuthResultCtxKey)
 	if !exist {
 		return nil, nil
 	}
 	result := ar.(*auth.AuthResult)
 
-	return result.User, result.Role
+	return result.User, result.Roles
+}
+
+func debugPrintUserRoleInfo(c *gin.Context, result *auth.AuthResult) {
+	if result.User == nil {
+		return
+	}
+
+	if result.Roles == nil {
+		Logger.Debugf(middleware.GetReqId(c), "用户[%s][%s]无任何权限", result.User.Id, result.User.Name)
+		return
+	}
+
+	var names []string
+	for _, role := range result.Roles {
+		names = append(names, role.Name)
+	}
+
+	Logger.Debugf(middleware.GetReqId(c), "用户[%s][%s]包含的角色为 %s",result.User.Id, result.User.Name, names)
 }

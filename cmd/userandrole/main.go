@@ -59,6 +59,8 @@ func main() {
 
 	api.UserRouter(userOption, apiRouter.Group(""))
 
+	api.UserWithRoleRouter(db, apiRouter.Group(""))
+
 	addr := "0.0.0.0:9300"
 	err = r.Run(addr)
 	if err != nil {

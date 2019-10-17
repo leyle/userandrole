@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/middleware"
+	"github.com/leyle/smsapp"
 	"github.com/leyle/userandrole/api"
 	. "github.com/leyle/userandrole/auth"
 	"github.com/leyle/userandrole/config"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userandrole"
+	"github.com/leyle/userandrole/userapp"
 	"os"
 )
 
@@ -30,7 +32,9 @@ func main() {
 	if err != nil {
 		os.Exit(1)
 	}
-	conf.Server.Port = port
+	if port != "" {
+		conf.Server.Port = port
+	}
 
 	ro := &dbandmq.RedisOption{
 		Host:   conf.Redis.Host,
@@ -83,9 +87,32 @@ func main() {
 	api.RoleRouter(db, apiRouter.Group(""))
 
 	// 用户接口
+	// 微信配置
+	wxOpt := make(map[string]*userapp.WeChatOption)
+	wxOpt[userapp.WeChatOptPlatformWeb] = &userapp.WeChatOption{
+		AppId:  conf.WeChat.Web.AppId,
+		Secret: conf.WeChat.Web.Secret,
+		Token:  conf.WeChat.Web.Token,
+		AesKey: conf.WeChat.Web.AesKey,
+	}
+	wxOpt[userapp.WeChatOptPlatformApp] = &userapp.WeChatOption{
+		AppId:  conf.WeChat.App.AppId,
+		Secret: conf.WeChat.App.Secret,
+	}
+	// 短信配置
+	smsOpt := &smsapp.SmsOption{
+		Account: conf.PhoneSms.Account,
+		Passwd:  conf.PhoneSms.Password,
+		Url:     conf.PhoneSms.Url,
+		R:       rClient,
+		Debug:   conf.PhoneSms.Debug,
+		Default: true,
+	}
 	userOption := &api.UserOption{
 		Ds: db,
 		R:  rClient,
+		WeChatOpt: wxOpt,
+		PhoneOpt: smsOpt,
 	}
 	api.UserRouter(userOption, apiRouter.Group(""))
 

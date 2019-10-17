@@ -139,14 +139,74 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 		userR.POST("/idpasswd/changepasswd", func(c *gin.Context) {
 			UpdatePasswdHandler(c, uo)
 		})
+
+		// 已登录微信情况下，绑定手机号
+		userR.POST("/wx/bindphone", func(c *gin.Context) {
+			AppendPhoneToWeChatHandler(c, uo)
+		})
+
+		// 用户读取自己的信息
+		userR.GET("/me", func(c *gin.Context) {
+			MeHandler(c, uo)
+		})
+
+		// 管理员创建一个手机号登录账户
+		userR.POST("/phone", func(c *gin.Context) {
+			CreateLoginPhoneHandler(c, uo)
+		})
+
+		// 管理员封禁用户
+		userR.POST("/ban", func(c *gin.Context) {
+			BanUserHandler(c, uo)
+		})
+
+		// 管理员解封用户
+		userR.POST("/unban", func(c *gin.Context) {
+			UnBanUserHandler(c, uo)
+		})
+
+		// 管理员重置用户密码
+		userR.POST("/idpasswd/resetpasswd", func(c *gin.Context) {
+			ResetPasswdHandler(c, uo)
+		})
+
+		// 管理员读取某个用户的详细信息
+		userR.GET("/user/:id", func(c *gin.Context) {
+			GetUserInfoHandler(c, uo)
+		})
+
+		// 管理员搜索用户列表
+		userR.GET("/users", func(c *gin.Context) {
+			QueryUserHandler(c, uo)
+		})
 	}
 
 	// 不需要 auth 的
 	noAuthR := g.Group("/user")
 	{
+		// 账户密码登录
 		noAuthR.POST("/idpasswd/login", func(c *gin.Context) {
 			LoginByIdPasswdHandler(c, uo)
 		})
+
+		// 微信登录
+		noAuthR.GET("/wx/login", func(c *gin.Context) {
+			LoginByWeChatHandler(c, uo)
+		})
+
+		// 手机号注册、登录
+		noAuthR.POST("/phone/sendsms", func(c *gin.Context) {
+			SendSmsHandler(c, uo)
+		})
+		noAuthR.POST("/phone/checksms", func(c *gin.Context) {
+			CheckSmsHandler(c, uo)
+		})
+
+		// token 验证
+		noAuthR.POST("/token/check", func(c *gin.Context) {
+			TokenCheckHandler(c, uo)
+		})
+
 	}
 }
 

@@ -15,3 +15,20 @@ mongodb:
   user: "test"
   passwd: "test"
   database: "testrole"
+
+wechat:
+  app:
+    appid: "wxdc1684c9e82c42b4"
+    secret: ""
+  web:
+    appid: "wx233ca74b3d313293"
+    secret: ""
+    token: ""
+    aeskey: ""
+
+phonesms:
+  account: ""
+  password: ""
+  url: "https://106.ihuyi.com/webservice/sms.php?method=Submit"
+  debug: true
+

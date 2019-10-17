@@ -7,6 +7,7 @@ import (
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/middleware"
 	"github.com/leyle/ginbase/returnfun"
+	"github.com/leyle/smsapp"
 	"github.com/leyle/userandrole/auth"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userapp"
@@ -20,6 +21,8 @@ const AuthResultCtxKey = "AUTHRESULT"
 type UserOption struct {
 	Ds *dbandmq.Ds
 	R *redis.Client
+	WeChatOpt map[string]*userapp.WeChatOption // 微信配置， key 是平台
+	PhoneOpt *smsapp.SmsOption // phone 发送配置
 }
 
 // 要求所有接口都登录才行？或者说，使用这个方法的接口的，默认必须要验证的

@@ -193,6 +193,16 @@ func QueryItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 		andCondition = append(andCondition, bson.M{"button": bson.M{"$regex": button}})
 	}
 
+	deleted := c.Query("deleted")
+	if deleted != "" {
+		deleted = strings.ToUpper(deleted)
+		if deleted == "TRUE" {
+			andCondition = append(andCondition, bson.M{"deleted": true})
+		} else {
+			andCondition = append(andCondition, bson.M{"deleted": false})
+		}
+	}
+
 	query := bson.M{}
 	if len(andCondition) > 0 {
 		query = bson.M{

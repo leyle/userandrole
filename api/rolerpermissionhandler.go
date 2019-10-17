@@ -11,6 +11,7 @@ import (
 	"github.com/leyle/userandrole/ophistory"
 	"github.com/leyle/userandrole/roleapp"
 	"gopkg.in/mgo.v2/bson"
+	"strings"
 )
 
 // 新建权限
@@ -259,6 +260,16 @@ func QueryPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	button := c.Query("button")
 	if button != "" {
 		andCondition = append(andCondition, bson.M{"button": bson.M{"$regex": button}})
+	}
+
+	deleted := c.Query("deleted")
+	if deleted != "" {
+		deleted = strings.ToUpper(deleted)
+		if deleted == "TRUE" {
+			andCondition = append(andCondition, bson.M{"deleted": true})
+		} else {
+			andCondition = append(andCondition, bson.M{"deleted": false})
+		}
 	}
 
 	query := bson.M{}

@@ -190,7 +190,7 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 		})
 
 		// 微信登录
-		noAuthR.GET("/wx/login", func(c *gin.Context) {
+		noAuthR.POST("/wx/login", func(c *gin.Context) {
 			LoginByWeChatHandler(c, uo)
 		})
 

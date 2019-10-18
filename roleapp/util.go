@@ -1,6 +1,7 @@
 package roleapp
 
 import (
+	"fmt"
 	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/util"
@@ -190,6 +191,13 @@ func InsuranceAdminRole(db *dbandmq.Ds) (*Role, error) {
 	}
 
 	Logger.Infof("", "启动roleapp，初始化adminrole成功，roleId[%s]", role.Id)
+
+
+	// 确保 admin 信息不可修改
+	err = LoadCanNotModifyIds(db)
+	if err != nil {
+		return nil, err
+	}
 	return role, nil
 }
 
@@ -303,4 +311,51 @@ func InsuranceDefaultRole(db *dbandmq.Ds) (*Role, error) {
 
 	Logger.Infof("", "启动roleapp，初始化普通用户role成功，roleId[%s]", role.Id)
 	return role, nil
+}
+
+// 初始化不能修改的数据id
+func LoadCanNotModifyIds(db *dbandmq.Ds) error {
+	role, err := GetRoleByName(db, AdminRoleName, true)
+	if err != nil {
+		return err
+	}
+
+	if role == nil {
+		e := fmt.Errorf("启动roleapp，发生错误，未先初始化 admin 的role信息")
+		Logger.Error("", e.Error())
+		return e
+	}
+
+	CanNotMidifyRoleIds = append(CanNotMidifyRoleIds, role.Id)
+	CanNotModifyPermissionIds = append(CanNotModifyPermissionIds, role.PermissionIds...)
+	for _, p := range role.Permissions {
+		CanNotModifyItemIds = append(CanNotModifyItemIds, p.ItemIds...)
+	}
+
+	Logger.Infof("", "启动roleapp，设置不可修改的roleIds %s, permissionIds %s, itemIds %s", CanNotMidifyRoleIds, CanNotModifyPermissionIds, CanNotModifyItemIds)
+	return nil
+}
+
+// 检查修改的数据是否是不允许修改的
+func CanNotModifyThis(idType, id string) bool {
+	switch idType {
+	case IdTypeItem:
+		return inArray(id, CanNotModifyItemIds)
+	case IdTypePermission:
+		return inArray(id, CanNotModifyPermissionIds)
+	case IdTypeRole:
+		return inArray(id, CanNotMidifyRoleIds)
+	default:
+		return false
+	}
+}
+
+func inArray(id string, targets []string) bool {
+	for _, t := range targets {
+		if t == id {
+			return true
+		}
+	}
+
+	return false
 }

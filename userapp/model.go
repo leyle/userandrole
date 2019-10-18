@@ -119,7 +119,7 @@ type WeChatAuth struct {
 
 // 微信配置
 const (
-	WeChatOptPlatformWeb = "WEB" // web 授权
+	WeChatOptPlatformWeb = "H5" // web 授权
 	WeChatOptPlatformApp = "APP" // app 登录
 )
 type WeChatOption struct {

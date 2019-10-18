@@ -74,6 +74,10 @@ func AddItemToPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypePermission, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -114,6 +118,10 @@ func RemoveItemFromPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypePermission, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -172,6 +180,10 @@ func UpdatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypePermission, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -204,6 +216,10 @@ func UpdatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 // 删除权限
 func DeletePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypePermission, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	// op history
 	curUser, _ := GetCurUserAndRole(c)

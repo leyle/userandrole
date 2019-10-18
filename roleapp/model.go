@@ -23,6 +23,18 @@ const (
 	AdminItemName = "admin:"
 )
 
+// 定义不可修改的 item / permissid / role Id
+const (
+	IdTypeItem = "item"
+	IdTypePermission = "permission"
+	IdTypeRole = "role"
+)
+var (
+	CanNotModifyItemIds []string
+	CanNotModifyPermissionIds []string
+	CanNotMidifyRoleIds []string
+)
+
 // item
 const CollectionNameItem = "item"
 type Item struct {

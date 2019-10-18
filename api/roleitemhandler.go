@@ -92,6 +92,10 @@ func UpdateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeItem, id) {
+		returnfun.Return403Json(c, "无权修改此数据 ")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -135,6 +139,10 @@ func UpdateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 // 删除 item
 func DeleteItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeItem, id) {
+		returnfun.Return403Json(c, "无权修改信息")
+		return
+	}
 
 	curUser, _ := GetCurUserAndRole(c)
 	if curUser == nil {

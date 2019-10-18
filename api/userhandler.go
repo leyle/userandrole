@@ -75,6 +75,17 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		UpdateT: user.CreateT,
 	}
 
+	// op history
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser == nil {
+		returnfun.ReturnErrJson(c, "获取当前用户失败")
+		return
+	}
+
+	opAction := fmt.Sprintf("管理员新建账户密码登录方式，loginId[%s]", form.LoginId)
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
+	user.History = append(user.History, opHis)
+
 	err = db.C(userapp.CollectionNameUser).Insert(user)
 	if err != nil {
 		Logger.Errorf(middleware.GetReqId(c), "注册账户[%s]失败, %s", form.LoginId, err.Error())
@@ -115,6 +126,19 @@ func UpdatePasswdHandler(c *gin.Context, ro *UserOption) {
 	defer db.Close()
 
 	err = resetPasswd(db, ro.R, userId, form.Passwd)
+	middleware.StopExec(err)
+
+	// op history
+	opAction := fmt.Sprintf("用户修改自己账户的登录密码")
+	opHis := ophistory.NewOpHistory(userId, curUser.Name, opAction)
+
+	updateOp := bson.M{
+		"$push": bson.M{
+			"history": opHis,
+		},
+	}
+
+	err = db.C(userapp.CollectionNameUser).UpdateId(userId, updateOp)
 	middleware.StopExec(err)
 
 	returnfun.ReturnOKJson(c, "")
@@ -212,12 +236,16 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 }
 
 // 微信拉起授权
+type LoginByWeChatForm struct {
+	Code string `json:"code" binding:"required"`
+	Platform string `json:"platform" binding:"required"`
+}
 func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
-	platform := c.Request.Header.Get("platform")
-	platform = strings.ToUpper(platform)
-	if platform == "" {
-		platform = userapp.WeChatOptPlatformWeb
-	}
+	var form LoginByWeChatForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
+
+	platform := strings.ToUpper(form.Platform)
 
 	wxOpt, ok := uo.WeChatOpt[platform]
 	if !ok {
@@ -230,7 +258,7 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 	wc := wechat.NewWechat(cf)
 
 	wxOauth := wc.GetOauth()
-	code := c.Query("code")
+	code := form.Code
 	resToken, err := wxOauth.GetUserAccessToken(code)
 	if err != nil {
 		Logger.Errorf(middleware.GetReqId(c), "根据code[%s]读取access token失败, %s", code, err.Error())
@@ -364,6 +392,18 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 
 	user, err = userapp.InitPhoneAuth(db, form.Phone)
 	middleware.StopExec(err)
+
+	// 记录 ophistory
+	curUser, _ := GetCurUserAndRole(c)
+	opAction := fmt.Sprintf("管理员给手机号[%s]初始化账户", form.Phone)
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
+	updateOp := bson.M{
+		"$push": bson.M{
+			"history": opHis,
+		},
+	}
+
+	_ = db.C(userapp.CollectionNameUser).UpdateId(user.Id, updateOp)
 
 	returnfun.ReturnOKJson(c, user)
 	return

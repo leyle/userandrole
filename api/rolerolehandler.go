@@ -76,6 +76,11 @@ func AddPermissionsToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeRole, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
+
 	db := ds.CopyDs()
 	defer db.Close()
 
@@ -115,6 +120,10 @@ func RemovePermissionsFromRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeRole, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -170,6 +179,10 @@ func UpdateRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeRole, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	db := ds.CopyDs()
 	defer db.Close()
@@ -202,6 +215,10 @@ func UpdateRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 // 注册用户 role 和 admin role 不能删除 todo
 func DeleteRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	id := c.Param("id")
+	if roleapp.CanNotModifyThis(roleapp.IdTypeRole, id) {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
 
 	// op history
 	curUser, _ := GetCurUserAndRole(c)

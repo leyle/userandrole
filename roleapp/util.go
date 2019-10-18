@@ -12,6 +12,10 @@ import (
 
 // 根据 roleId 列表读取完整的 roles 信息
 func GetRolesByRoleIds(db *dbandmq.Ds, roleIds []string) ([]*Role, error) {
+	if len(roleIds) > 1 {
+		roleIds = util.UniqueStringArray(roleIds)
+	}
+
 	f := bson.M{
 		"deleted": false,
 		"_id": bson.M{

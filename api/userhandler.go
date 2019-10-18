@@ -313,7 +313,7 @@ func SendSmsHandler(c *gin.Context, uo *UserOption) {
 	middleware.StopExec(err)
 
 	if uo.PhoneOpt.Debug {
-		code := uo.R.Get(smsapp.PhoneRedisPrefix + form.Phone)
+		code, _ := uo.R.Get(smsapp.PhoneRedisPrefix + form.Phone).Result()
 		returnfun.ReturnOKJson(c, gin.H{"code": code})
 		return
 	}
@@ -515,7 +515,7 @@ func BanUserHandler(c *gin.Context, uo *UserOption) {
 	}
 
 	// op history
-	opAction := fmt.Sprintf("封禁用户[%s][%s], reason[%s],到期时间[%d]", user.Id, user.Name, form.Reason, form.T)
+	opAction := fmt.Sprintf("封禁用户[%s][%s], reason[%s],到期时间[%d]", user.Id, user.Name, form.Reason, t)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 
 	update := bson.M{

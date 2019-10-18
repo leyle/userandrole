@@ -27,10 +27,11 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 		uwr = &UserWithRole{
 			Id:       util.GenerateDataId(),
 			UserId:   userId,
-			UserName: "",
-			Avatar:   "",
 			RoleIds:  []string{roleapp.DefaultRoleId},
 		}
+	} else {
+		// 所有用户都添加一个默认 roleId
+		uwr.RoleIds = append(uwr.RoleIds, roleapp.DefaultRoleId)
 	}
 
 	roles, err := roleapp.GetRolesByRoleIds(db, uwr.RoleIds)

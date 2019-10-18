@@ -150,6 +150,11 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			MeHandler(c, uo)
 		})
 
+		// 退出登录
+		userR.GET("/logout", func(c *gin.Context) {
+			LogoutHandler(c, uo)
+		})
+
 		// 管理员创建一个手机号登录账户
 		userR.POST("/phone", func(c *gin.Context) {
 			CreateLoginPhoneHandler(c, uo)

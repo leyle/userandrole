@@ -41,7 +41,7 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 	if dbitem != nil {
 		Logger.Errorf(middleware.GetReqId(c), "新建role item时，已存在同名[%s]数据", name)
-		returnfun.ReturnErrJson(c, "name 重复")
+		returnfun.ReturnJson(c, 400, ErrCodeNameExist, "name 重复", gin.H{"id": dbitem.Id})
 		return
 	}
 

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/middleware"
 	"github.com/leyle/smsapp"
@@ -80,6 +81,9 @@ func main() {
 	}
 	api.AuthOption = authOption
 
+	if !conf.Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r := middleware.SetupGin()
 	apiRouter := r.Group("/api")
 
@@ -120,9 +124,13 @@ func main() {
 	api.UserWithRoleRouter(db, apiRouter.Group(""))
 
 	// 系统配置的接口
+	// 过滤掉本接口返回的数据
 	middleware.AddIgnoreReadReqBodyPath("/api/sys/conf")
 	api.SystemConfRouter(conf, apiRouter.Group(""))
-	// 过滤掉本接口返回的数据
+
+	// api 文档渲染
+	middleware.AddIgnoreReadReqBodyPath("/api/doc")
+	r.StaticFile("/api/doc", "./doc.html")
 
 	addr := conf.Server.GetServerAddr()
 	err = r.Run(addr)

@@ -34,7 +34,7 @@ func CreatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	if dbp != nil {
-		returnfun.ReturnErrJson(c, "权限已存在")
+		returnfun.ReturnJson(c, 400, ErrCodeNameExist, "权限已存在", gin.H{"id": dbp.Id})
 		return
 	}
 

@@ -68,7 +68,7 @@ func SaveToken(r *redis.Client, token string, user *User) error {
 
 	tkDump, _ := jsoniter.Marshal(&tkVal)
 
-	key := TokenRedisPrefix + user.Id
+	key := generateTokenKey(user.Id)
 	_, err := r.Set(key, tkDump, 0).Result()
 	if err != nil {
 		Logger.Errorf("", "存储用户[%s]的token到redis失败, %s", user.Id, err.Error())
@@ -80,7 +80,7 @@ func SaveToken(r *redis.Client, token string, user *User) error {
 
 // 删除token
 func DeleteToken(r *redis.Client, userId string) error {
-	key := TokenRedisPrefix + userId
+	key := generateTokenKey(userId)
 	_, err := r.Del(key).Result()
 	if err != nil && err != redis.Nil {
 		Logger.Errorf("", "移除用户[%s]token失败, %s", userId, err.Error())
@@ -101,7 +101,7 @@ func CheckToken(r *redis.Client, token string) (*TokenVal, error) {
 	Logger.Debugf("", "CheckToken 时，parsetoken成功，用户[%s]，token生成时间[%s]", userId, util.FmtTimestampTime(t))
 
 	// 从 redis 中读取 tokenval 信息
-	key := TokenRedisPrefix + userId
+	key := generateTokenKey(userId)
 	data, err := r.Get(key).Result()
 	if err != nil {
 		Logger.Errorf("", "CheckToken 时，从redis读取指定用户[%s]的tokenval失败, %s", userId, err.Error())
@@ -115,7 +115,18 @@ func CheckToken(r *redis.Client, token string) (*TokenVal, error) {
 		return nil, err
 	}
 
+	if tkVal.Token != token {
+		// token 被重新生成了，原 token 失效
+		err = fmt.Errorf("token失效")
+		Logger.Infof("", "验证用户[%s][%s]的token[%s]时，传递token与redis保存token不一致，待验证token已失效", tkVal.User.Id, tkVal.User.Name, token)
+		return nil, err
+	}
+
 	return tkVal, nil
+}
+
+func generateTokenKey(userId string) string {
+	return TokenRedisPrefix + userId
 }
 
 // 确保系统启动时包含了系统管理员账户
@@ -134,6 +145,8 @@ func InsureAdminAccount(db *dbandmq.Ds) (*User, error) {
 	}
 
 	Logger.Infof("", "启动userapp，init admin 账户成功，userId[%s]", user.Id)
+
+	AdminUserId = user.Id
 
 	return user, nil
 }

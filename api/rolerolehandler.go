@@ -33,7 +33,7 @@ func CreateRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	dbrole, err := roleapp.GetRoleByName(db, form.Name, false)
 	middleware.StopExec(err)
 	if dbrole != nil {
-		returnfun.ReturnErrJson(c, "role已存在")
+		returnfun.ReturnJson(c, 400, ErrCodeNameExist, "role已存在", gin.H{"id": dbrole.Id})
 		return
 	}
 

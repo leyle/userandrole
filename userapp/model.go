@@ -19,6 +19,8 @@ const (
 	AdminLoginPasswd = "admin" // 系统初始化后，可以修改
 )
 
+var AdminUserId = ""
+
 const TokenRedisPrefix = "USER:TOKEN:USERID:"
 
 // 存储到 redis 中的 token 信息

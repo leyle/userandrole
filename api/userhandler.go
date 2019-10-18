@@ -17,6 +17,7 @@ import (
 	"github.com/silenceper/wechat"
 	"gopkg.in/mgo.v2/bson"
 	"strings"
+	"time"
 )
 
 // 通过账户密码数据，没有自己注册的，都是通过接口创建的
@@ -44,7 +45,7 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 	dbuser, err := userapp.GetUserByLoginId(db, form.LoginId)
 	middleware.StopExec(err)
 	if dbuser != nil {
-		returnfun.ReturnErrJson(c, "账户已存在")
+		returnfun.ReturnJson(c, 400, ErrCodeNameExist, "账户已存在", gin.H{"id": dbuser.Id})
 		return
 	}
 
@@ -226,6 +227,8 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	err = userapp.SaveToken(uo.R, token, dbuser)
 	middleware.StopExec(err)
 
+	// 记录登录信息
+
 	retData := gin.H{
 		"token": token,
 		"user": dbuser,
@@ -370,6 +373,20 @@ func MeHandler(c *gin.Context, uo *UserOption) {
 	return
 }
 
+// 退出登录
+func LogoutHandler(c *gin.Context, uo *UserOption) {
+	// 删除 token 即可
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser == nil {
+		returnfun.ReturnErrJson(c, "获取用户信息失败")
+		return
+	}
+	err := userapp.DeleteToken(uo.R, curUser.Id)
+	middleware.StopExec(err)
+	returnfun.ReturnOKJson(c, "")
+	return
+}
+
 // 管理员创建 phone 账户
 type CreateLoginPhoneForm struct {
 	Phone string `json:"phone" binding:"required"`
@@ -386,7 +403,7 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 	user, err := userapp.GetUserByPhone(db, form.Phone)
 	middleware.StopExec(err)
 	if user != nil {
-		returnfun.ReturnJson(c, 400, 400, "phone已存在", user)
+		returnfun.ReturnJson(c, 400, ErrCodeNameExist, "phone已存在", gin.H{"id": user.Id})
 		return
 	}
 
@@ -481,12 +498,23 @@ func BanUserHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
-	// op history
 	curUser, _ := GetCurUserAndRole(c)
 	if curUser == nil {
 		returnfun.ReturnErrJson(c, "获取当前用户失败")
 		return
 	}
+
+	if user.Id == curUser.Id || user.Id == userapp.AdminUserId {
+		returnfun.ReturnErrJson(c, "不能禁用自己")
+		return
+	}
+
+	t := time.Now().Unix() + 365 * 24 * 60 * 60
+	if form.T > 0 && form.T > time.Now().Unix() {
+		t = form.T
+	}
+
+	// op history
 	opAction := fmt.Sprintf("封禁用户[%s][%s], reason[%s],到期时间[%d]", user.Id, user.Name, form.Reason, form.T)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 
@@ -494,7 +522,7 @@ func BanUserHandler(c *gin.Context, uo *UserOption) {
 		"$set": bson.M{
 			"ban": true,
 			"banReason": form.Reason,
-			"banT": form.T,
+			"banT": t,
 			"updateT": util.GetCurTime(),
 		},
 		"$push": bson.M{
@@ -576,6 +604,11 @@ func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
+	if user.Id == userapp.AdminUserId {
+		returnfun.Return403Json(c, "无权做此操作")
+		return
+	}
+
 	// 直接 update，如果不存在 loginid 登录方式就会报错
 	salt := util.GenerateDataId()
 	passwd := smsapp.GenerateSmsCode(8)
@@ -612,6 +645,9 @@ func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 
 	err = db.C(userapp.CollectionNameUser).UpdateId(user.Id, updateOpHis)
 	middleware.StopExec(err)
+
+	// 删除已经登录的 token
+	_ = userapp.DeleteToken(uo.R, user.Id)
 
 	retData := gin.H{
 		"passwd": passwd,

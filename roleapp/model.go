@@ -47,6 +47,11 @@ var AdminItemNames = []string{
 
 // item
 const CollectionNameItem = "item"
+var IKItem = &dbandmq.IndexKey{
+	Collection:    CollectionNameItem,
+	SingleKey:     []string{"name", "method", "path", "deleted"},
+	UniqueKey:     []string{"name"},
+}
 type Item struct {
 	Id string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`
@@ -69,6 +74,11 @@ type Item struct {
 
 // permission
 const CollectionPermissionName = "permission"
+var IKPermission = &dbandmq.IndexKey{
+	Collection:    CollectionPermissionName,
+	SingleKey:     []string{"name", "itemIds", "deleted"},
+	UniqueKey:     []string{"name"},
+}
 type Permission struct {
 	Id string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`
@@ -89,6 +99,11 @@ type Permission struct {
 
 // role
 const CollectionNameRole = "role"
+var IKRole = &dbandmq.IndexKey{
+	Collection:    CollectionNameRole,
+	SingleKey:     []string{"name", "permissionIds", "deleted"},
+	UniqueKey:     []string{"name"},
+}
 type Role struct {
 	Id string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`

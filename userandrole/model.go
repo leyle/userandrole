@@ -12,6 +12,11 @@ import (
 
 // 用户角色关联
 const CollectionNameUserWithRole = "userWithRole"
+var IKUserWithRole = &dbandmq.IndexKey{
+	Collection:    CollectionNameUserWithRole,
+	SingleKey:     []string{"userId", "roleIds"},
+	UniqueKey:     []string{"userId"},
+}
 type UserWithRole struct {
 	Id string             `json:"id" bson:"_id"`
 	UserId string         `json:"userId" bson:"userId"`

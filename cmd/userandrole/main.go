@@ -10,6 +10,7 @@ import (
 	"github.com/leyle/userandrole/api"
 	. "github.com/leyle/userandrole/auth"
 	"github.com/leyle/userandrole/config"
+	"github.com/leyle/userandrole/ophistory"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userandrole"
 	"github.com/leyle/userandrole/userapp"
@@ -59,6 +60,14 @@ func main() {
 
 	db := dbandmq.NewDs(mgo)
 	defer db.Close()
+
+	// 创建 indexkey
+	addIndexkey(db)
+	err = db.InsureCollectionKeys()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	// 初始化 admin 和相关权限
 	err = userandrole.InitAdminWithRole(db)
@@ -138,4 +147,22 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func addIndexkey(db *dbandmq.Ds) {
+	// user
+	dbandmq.AddIndexKey(userapp.IKIdPasswd)
+	dbandmq.AddIndexKey(userapp.IKPhone)
+	dbandmq.AddIndexKey(userapp.IKWeChat)
+
+	// uwr
+	dbandmq.AddIndexKey(userandrole.IKUserWithRole)
+
+	// role
+	dbandmq.AddIndexKey(roleapp.IKItem)
+	dbandmq.AddIndexKey(roleapp.IKPermission)
+	dbandmq.AddIndexKey(roleapp.IKRole)
+
+	// ophistory
+	dbandmq.AddIndexKey(ophistory.IKLoginHistory)
 }

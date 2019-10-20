@@ -78,6 +78,11 @@ type User struct {
 
 // 账户密码登录方式
 const CollectionNameIdPasswd = "idPasswdAuth"
+var IKIdPasswd = &dbandmq.IndexKey{
+	Collection:    CollectionNameIdPasswd,
+	SingleKey:     []string{"userId", "selfReg"},
+	UniqueKey:     []string{"loginId"},
+}
 type UserLoginIdPasswdAuth struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`
@@ -85,23 +90,35 @@ type UserLoginIdPasswdAuth struct {
 	Salt string `json:"-" bson:"salt"`
 	Passwd string `json:"-" bson:"passwd"`
 	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，修改密码后就是 false, 自主注册，是 false
+	SelfReg bool `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
 }
 
 // 手机验证码登录
 const CollectionNamePhone = "phoneAuth"
+var IKPhone = &dbandmq.IndexKey{
+	Collection:    CollectionNamePhone,
+	SingleKey:     []string{"userId", "selfReg"},
+	UniqueKey:     []string{"phone"},
+}
 type PhoneAuth struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`
 	Phone string `json:"phone" bson:"phone"`
 	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，自主注册，是 false
+	SelfReg bool `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
 }
 
 // 微信登录
 const CollectionNameWeChat = "weChatAuth"
+var IKWeChat = &dbandmq.IndexKey{
+	Collection:    CollectionNameWeChat,
+	SingleKey:     []string{"userId", "unionId"},
+	UniqueKey:     []string{"openId"},
+}
 type WeChatAuth struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`

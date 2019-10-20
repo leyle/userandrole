@@ -29,6 +29,10 @@ func NewOpHistory(userId, userName, action string) *OperationHistory {
 
 // 账户登录历史记录
 const CollectionNameLoginHistory = "loginHistory"
+var IKLoginHistory = &dbandmq.IndexKey{
+	Collection:    CollectionNameLoginHistory,
+	SingleKey:     []string{"userId", "loginType", "platform", "loginT"},
+}
 type LoginHistory struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`

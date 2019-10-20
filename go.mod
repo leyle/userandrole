@@ -8,7 +8,7 @@ require (
 	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/json-iterator/go v1.1.7
-	github.com/leyle/ginbase v1.0.11
+	github.com/leyle/ginbase v1.1.1
 	github.com/leyle/smsapp v1.0.1
 	github.com/silenceper/wechat v2.0.0+incompatible
 	github.com/spf13/viper v1.4.0

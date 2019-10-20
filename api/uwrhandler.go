@@ -37,7 +37,9 @@ func AddRolesToUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	// 检查 uwr 是否存在，不存在新建，存在就是更新
 	uwr, err := userandrole.GetUserWithRoleByUserId(db, form.UserId)
 	middleware.StopExec(err)
+	update := true
 	if uwr == nil {
+		update = false
 		uwr = &userandrole.UserWithRole{
 			Id:       util.GenerateDataId(),
 			UserId:   form.UserId,
@@ -61,7 +63,7 @@ func AddRolesToUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 	uwr.History = append(uwr.History, opHis)
 
-	err = userandrole.SaveUserWithRole(db, uwr)
+	err = userandrole.SaveUserWithRole(db, uwr, update)
 	middleware.StopExec(err)
 
 	returnfun.ReturnOKJson(c, uwr)

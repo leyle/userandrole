@@ -83,7 +83,7 @@ func initAdminWithRole(db *dbandmq.Ds, userId, userName, roleId string) error {
 			CreateT:  util.GetCurTime(),
 		}
 		uwr.UpdateT = uwr.CreateT
-		err = SaveUserWithRole(db, uwr)
+		err = SaveUserWithRole(db, uwr, false)
 		if err != nil {
 			return err
 		}

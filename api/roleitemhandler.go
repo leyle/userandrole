@@ -175,6 +175,9 @@ func GetItemInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 func QueryItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var andCondition []bson.M
 
+	// 过滤掉 admin
+	andCondition = append(andCondition, bson.M{"name": bson.M{"$not": bson.M{"$in": roleapp.AdminItemNames}}})
+
 	name := c.Query("name")
 	if name != "" {
 		andCondition = append(andCondition, bson.M{"name": bson.M{"$regex": name}})

@@ -35,6 +35,16 @@ var (
 	CanNotMidifyRoleIds []string
 )
 
+var AdminItemNames = []string{
+	AdminItemName + "GET",
+	AdminItemName + "POST",
+	AdminItemName + "PUT",
+	AdminItemName + "DELETE",
+	AdminItemName + "PATCH",
+	AdminItemName + "OPTION",
+	AdminItemName + "HEAD",
+}
+
 // item
 const CollectionNameItem = "item"
 type Item struct {

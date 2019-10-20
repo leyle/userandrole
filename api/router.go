@@ -180,6 +180,11 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			GetUserInfoHandler(c, uo)
 		})
 
+		// 查看用户的登录历史记录
+		userR.GET("/loginhistory/:id", func(c *gin.Context) {
+			GetUserLoginHistoryHandler(c, uo)
+		})
+
 		// 管理员搜索用户列表
 		userR.GET("/users", func(c *gin.Context) {
 			QueryUserHandler(c, uo)

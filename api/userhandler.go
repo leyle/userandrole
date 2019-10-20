@@ -228,6 +228,17 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	middleware.StopExec(err)
 
 	// 记录登录信息
+	lh := &ophistory.LoginHistory{
+		Id:        util.GenerateDataId(),
+		UserId:    dbuser.Id,
+		UserName:  dbuser.Name,
+		LoginType: userapp.LoginTypeIdPasswd,
+		Platform:  form.Platform,
+		Ip:        c.Request.RemoteAddr,
+		UserAgent: c.Request.UserAgent(),
+		LoginT:    util.GetCurTime(),
+	}
+	_ = ophistory.SaveLoginHistory(db, lh)
 
 	retData := gin.H{
 		"token": token,
@@ -290,6 +301,19 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
+	// 保存登录成功的信息
+	lh := &ophistory.LoginHistory{
+		Id:        util.GenerateDataId(),
+		UserId:    user.Id,
+		UserName:  user.Name,
+		LoginType: userapp.LoginTypeWeChat,
+		Platform:  form.Platform,
+		Ip:        c.Request.RemoteAddr,
+		UserAgent: c.Request.UserAgent(),
+		LoginT:    util.GetCurTime(),
+	}
+	_ = ophistory.SaveLoginHistory(db, lh)
+
 	retData := gin.H{
 		"token": token,
 		"user": user,
@@ -326,6 +350,7 @@ func SendSmsHandler(c *gin.Context, uo *UserOption) {
 type CheckSmsForm struct {
 	Phone string `json:"phone" binding:"required"`
 	Code string `json:"code" binding:"required"`
+	Platform string `json:"platform" binding:"required"`
 }
 func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	var form CheckSmsForm
@@ -350,6 +375,19 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 		returnfun.Return401Json(c, "banned")
 		return
 	}
+
+	// 保存登录信息
+	lh := &ophistory.LoginHistory{
+		Id:        util.GenerateDataId(),
+		UserId:    user.Id,
+		UserName:  user.Name,
+		LoginType: userapp.LoginTypePhone,
+		Platform:  form.Platform,
+		Ip:        c.Request.RemoteAddr,
+		UserAgent: c.Request.UserAgent(),
+		LoginT:    util.GetCurTime(),
+	}
+	_ = ophistory.SaveLoginHistory(db, lh)
 
 	retData := gin.H{
 		"token": token,
@@ -681,6 +719,21 @@ func GetUserInfoHandler(c *gin.Context, uo *UserOption) {
 		"roles": uwr.Roles,
 	}
 	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 读取某个用户的登录历史记录
+func GetUserLoginHistoryHandler(c *gin.Context, uo *UserOption) {
+	userId := c.Param("id")
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	page, _, _ := util.GetPageAndSize(c)
+
+	lhs, err := ophistory.GetLoginHistoryByUserId(db, userId, page)
+	middleware.StopExec(err)
+
+	returnfun.ReturnOKJson(c, lhs)
 	return
 }
 

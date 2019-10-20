@@ -263,6 +263,9 @@ func GetPermissionInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 func QueryPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var andCondition []bson.M
 
+	// 过滤掉 admin
+	andCondition = append(andCondition, bson.M{"name": bson.M{"$ne": roleapp.AdminPermissionName}})
+
 	name := c.Query("name")
 	if name != "" {
 		andCondition = append(andCondition, bson.M{"name": bson.M{"$regex": name}})

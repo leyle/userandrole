@@ -8,6 +8,8 @@
 
 setHeader("token", "someValue")
 
+同一个登录方式只能同时在一个平台上有效登录，不支持同一个登录方式在多个平台登录。
+
 ---
 
 
@@ -122,6 +124,16 @@ setHeader("token", "someValue")
 
 ---
 
+#### 管理员读取某个用户的登录历史记录
+
+```json
+// GET /api/user/loginhistory/:id?page=1
+// 路径中的 id 指的是用户 id，page 指的是读取第几页的数据
+// 单页返回记录为 10 条数据，返回数据中无 total 字段，根据返回的数据是否为空（或是否size==10）来判断是否读取完毕
+```
+
+---
+
 #### 管理员搜索用户列表
 
 ```json
@@ -187,7 +199,8 @@ setHeader("token", "someValue")
 // POST /api/user/phone/checksms
 {
   "phone": "13812345678",
-  "code": "123456"
+  "code": "123456",
+  "platform": "H5"
 }
 ```
 

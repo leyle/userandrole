@@ -8,14 +8,14 @@ import (
 func TestGenerateToken(t *testing.T) {
 	userId := "5da41d400ce239748629d9d3"
 
-	token, err := GenerateToken(userId)
+	token, err := GenerateToken(userId, LoginTypeIdPasswd)
 	if err != nil {
 		t.Error(err)
 	}
 
 	t.Log(token)
 
-	pid, pt, err := ParseToken(token)
+	pid, _, pt, err := ParseToken(token)
 	t.Log(pid)
 	t.Log(pt)
 }
@@ -34,7 +34,7 @@ func TestSaveToken(t *testing.T) {
 
 	userId := "5da41d400ce239748629d9d3"
 
-	token, err := GenerateToken(userId)
+	token, err := GenerateToken(userId, LoginTypeIdPasswd)
 	if err != nil {
 		t.Error(err)
 	}
@@ -48,12 +48,10 @@ func TestSaveToken(t *testing.T) {
 
 	user := &User{
 		Id:        userId,
-		Domain:    "robot",
 		Name:      "test",
 		Platform:  "WEB",
 		LoginType: "IDPASSWD",
 		IdPasswd:  idpasswd,
-		UserEmail: nil,
 		Ip:        "192.168.100.188",
 	}
 

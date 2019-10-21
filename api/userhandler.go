@@ -173,7 +173,7 @@ func resetPasswd(db *dbandmq.Ds, r *redis.Client, userId, newP string) error {
 	}
 
 	// 删除token
-	err = userapp.DeleteToken(r, userId)
+	err = userapp.DeleteToken(r, userId, userapp.LoginTypeIdPasswd)
 	if err != nil {
 		return err
 	}
@@ -219,9 +219,10 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 	dbuser.Platform = form.Platform
+	dbuser.LoginType = userapp.LoginTypeIdPasswd
 
 	// 检查一致，生成 token ，存储到数据库，返回用户token信息
-	token, err := userapp.GenerateToken(dbuser.Id)
+	token, err := userapp.GenerateToken(dbuser.Id, userapp.LoginTypeIdPasswd)
 	middleware.StopExec(err)
 
 	err = userapp.SaveToken(uo.R, token, dbuser)
@@ -419,7 +420,7 @@ func LogoutHandler(c *gin.Context, uo *UserOption) {
 		returnfun.ReturnErrJson(c, "获取用户信息失败")
 		return
 	}
-	err := userapp.DeleteToken(uo.R, curUser.Id)
+	err := userapp.DeleteToken(uo.R, curUser.Id, curUser.LoginType)
 	middleware.StopExec(err)
 	returnfun.ReturnOKJson(c, "")
 	return
@@ -685,7 +686,7 @@ func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 	middleware.StopExec(err)
 
 	// 删除已经登录的 token
-	_ = userapp.DeleteToken(uo.R, user.Id)
+	_ = userapp.DeleteToken(uo.R, user.Id, userapp.LoginTypeIdPasswd)
 
 	retData := gin.H{
 		"passwd": passwd,

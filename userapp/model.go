@@ -21,7 +21,7 @@ const (
 
 var AdminUserId = ""
 
-const TokenRedisPrefix = "USER:TOKEN:USERID:"
+const TokenRedisPrefix = "USER:TOKEN:USERID"
 
 // 存储到 redis 中的 token 信息
 // 包含了 token 值外，还有用户信息
@@ -234,7 +234,7 @@ func SaveWeChatLogin(db *dbandmq.Ds, r *redis.Client, wxInfo *oauth.UserInfo) (*
 	}
 
 	// 生成 token
-	token, err := GenerateToken(user.Id)
+	token, err := GenerateToken(user.Id, LoginTypeWeChat)
 	if err != nil {
 		return nil, "", err
 	}
@@ -335,7 +335,7 @@ func SavePhoneLogin(db *dbandmq.Ds, r *redis.Client, phone string) (*User, strin
 	}
 
 	// 生成 token
-	token, err := GenerateToken(user.Id)
+	token, err := GenerateToken(user.Id, LoginTypePhone)
 	if err != nil {
 		return nil, "", err
 	}

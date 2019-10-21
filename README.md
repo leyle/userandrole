@@ -173,6 +173,15 @@ setHeader("token", "someValue")
 
 ---
 
+#### 读取微信 appid
+
+```json
+// GET /api/user/wx/appid?platform=H5
+// platform 可选值 H5 / APP
+```
+
+---
+
 #### 用户使用账户密码登录
 
 ```json

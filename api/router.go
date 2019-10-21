@@ -199,6 +199,11 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			LoginByIdPasswdHandler(c, uo)
 		})
 
+		// 读取微信 appid
+		noAuthR.GET("/wx/appid", func(c *gin.Context) {
+			GetWeChatAppIdHandler(c, uo)
+		})
+
 		// 微信登录
 		noAuthR.POST("/wx/login", func(c *gin.Context) {
 			LoginByWeChatHandler(c, uo)

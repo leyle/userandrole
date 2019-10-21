@@ -250,6 +250,28 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	return
 }
 
+// 读取微信 appid
+func GetWeChatAppIdHandler(c *gin.Context, uo *UserOption) {
+	platform := c.Query("platform")
+	if platform == "" {
+		returnfun.ReturnErrJson(c, "缺少 platform 值")
+		return
+	}
+	platform = strings.ToUpper(platform)
+	opt, ok := uo.WeChatOpt[platform]
+	if !ok {
+		returnfun.ReturnErrJson(c, "错误的 platform 值")
+		return
+	}
+
+	retData := gin.H{
+		"platform": platform,
+		"appId": opt.AppId,
+	}
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
 // 微信拉起授权
 type LoginByWeChatForm struct {
 	Code string `json:"code" binding:"required"`

@@ -142,7 +142,7 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 
 		// 已登录微信情况下，绑定手机号
 		userR.POST("/wx/bindphone", func(c *gin.Context) {
-			AppendPhoneToWeChatHandler(c, uo)
+			WeChatBindPhoneHandler(c, uo)
 		})
 
 		// 用户读取自己的信息

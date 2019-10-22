@@ -50,6 +50,7 @@ const (
 
 // 用户管理，支持域
 const CollectionNameUser = "user"
+const CombineAccountBanReason = "合并账户，本账户停用"
 type User struct {
 	Id string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"` // 如果是 id 登录，就是 id，如果是email 登录，就是 email，如果是手机号，就是手机号，如果是微信/QQ就是暱称
@@ -64,6 +65,10 @@ type User struct {
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
+
+	// 如果发生迁移，此处记录的是迁移到目标 User 的 id
+	// 本账户就被标记为 ban = true
+	ReferId string `json:"referId" bson:"referId"`
 
 	// 以下内容是序列化到 redis 中需要的
 	Platform string `json:"platform" bson:"-"`
@@ -537,4 +542,21 @@ func QueryWeChatAuthByNickname(db *dbandmq.Ds, nickname string) ([]*WeChatAuth, 
 	}
 
 	return wcas, nil
+}
+
+func IsValidPlatform(p string) bool {
+	vals := []string{
+		LoginPlatformH5,
+		LoginPlatformAndroid,
+		LoginPlatformIOS,
+		LoginPlatformPC,
+	}
+
+	for _, val := range vals {
+		if val == p {
+			return true
+		}
+	}
+
+	return false
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/leyle/userandrole/userapp"
 	"github.com/silenceper/wechat"
 	"gopkg.in/mgo.v2/bson"
+	"math"
 	"strings"
 	"time"
 )
@@ -193,6 +194,12 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	var form LoginIdPasswdForm
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)
+
+	// 检查 platform 值的有效性
+	if !userapp.IsValidPlatform(form.Platform) {
+		returnfun.ReturnErrJson(c, "错误的 platform 值")
+		return
+	}
 
 	db := uo.Ds.CopyDs()
 	defer db.Close()
@@ -380,6 +387,11 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)
 
+	if !userapp.IsValidPlatform(form.Platform) {
+		returnfun.ReturnErrJson(c, "错误的 platform 值")
+		return
+	}
+
 	ok, err := uo.PhoneOpt.CheckSms(form.Phone, form.Code)
 	middleware.StopExec(err)
 
@@ -488,8 +500,128 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 }
 
 // 已登录微信情况下，绑定手机号
-func AppendPhoneToWeChatHandler(c *gin.Context, uo *UserOption) {
+// 处理逻辑
+// 如果 phone 不存在，则 phoneAuth 存储的 userid 使用当前登录账户的
+// 如果 phone 存在，以 phone 为主，修改 wechatAuth 的 userid
+// 标记原 user 数据为被合并的数据，标记为失效
+// 调用者获取到成功响应后，就应该重新拉去登录，因为之前的信息会被删除
+type WeChatBindPhoneForm struct {
+	Phone string `json:"phone" binding:"required"`
+	Code string `json:"code" binding:"required"`
+}
+func WeChatBindPhoneHandler(c *gin.Context, uo *UserOption) {
+	var form WeChatBindPhoneForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
 
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser == nil {
+		returnfun.ReturnErrJson(c, "获取当前用户信息失败")
+		return
+	}
+
+	if curUser.LoginType != userapp.LoginTypeWeChat {
+		returnfun.ReturnErrJson(c, "当前登录类型不是微信授权")
+		return
+	}
+
+	// 验证短信有效性
+	ok, err := uo.PhoneOpt.CheckSms(form.Phone, form.Code)
+	middleware.StopExec(err)
+
+	if !ok {
+		returnfun.ReturnErrJson(c, "验证码错误")
+		return
+	}
+
+	// 验证通过，检查手机号是否存在
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	phoneUser, err := userapp.GetUserByPhone(db, form.Phone)
+	middleware.StopExec(err)
+	if phoneUser == nil {
+		// 账户不存在，直接创建一个 userId 是当前微信号所属的数据
+		ph := &userapp.PhoneAuth{
+			Id:      util.GenerateDataId(),
+			UserId:  curUser.Id,
+			Phone:   form.Phone,
+			Init:    false,
+			SelfReg: true,
+			CreateT: util.GetCurTime(),
+		}
+		ph.UpdateT = ph.CreateT
+
+		err = db.C(userapp.CollectionNamePhone).Insert(ph)
+		middleware.StopExec(err)
+
+		// op history
+		opAction := fmt.Sprintf("微信绑定手机号[%s]时，手机号不存在，创建新的 phoneAuth，并关联到当前用户下", form.Phone)
+		opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
+		update := bson.M{
+			"$set": bson.M{
+				"updateT": util.GetCurTime(),
+			},
+			"$push": bson.M{
+				"history": opHis,
+			},
+		}
+
+		err = db.C(userapp.CollectionNameUser).UpdateId(curUser.Id, update)
+		middleware.StopExec(err)
+	} else {
+		// 以 phone 为主，迁移微信登录信息
+		// 1. 更新原微信 userId
+		userId := phoneUser.Id
+		updateA := bson.M{
+			"$set": bson.M{
+				"userId": userId,
+				"updateT": util.GetCurTime(),
+			},
+		}
+		fA := bson.M{
+			"userId": curUser.Id,
+		}
+		err = db.C(userapp.CollectionNameWeChat).Update(fA, updateA)
+		middleware.StopExec(err)
+
+		// 2. 更新原 wechat user 信息
+		opActionB := fmt.Sprintf("微信绑定手机号[%s]，手机账户已存在，本账户就被禁用", form.Phone)
+		opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opActionB)
+
+		updateB := bson.M{
+			"$set": bson.M{
+				"referId": phoneUser.Id,
+				"ban": true,
+				"banT": math.MaxInt64,
+				"banReason": userapp.CombineAccountBanReason,
+				"updateT": util.GetCurTime(),
+			},
+			"$push": bson.M{
+				"history": opHis,
+			},
+		}
+		err = db.C(userapp.CollectionNameUser).UpdateId(curUser.Id, updateB)
+		middleware.StopExec(err)
+
+		// 3. 更新 phone user 信息
+		opActionC := fmt.Sprintf("微信[%s]绑定手机号[%s]，从原账户[%s]迁移过来微信信息", curUser.WeChatAuth.OpenId, form.Phone, curUser.Id)
+		opHis = ophistory.NewOpHistory(curUser.Id, curUser.Name, opActionC)
+
+		updateC := bson.M{
+			"$set": bson.M{
+				"updateT": util.GetCurTime(),
+			},
+			"$push": bson.M{
+				"history": opHis,
+			},
+		}
+
+		err = db.C(userapp.CollectionNameUser).UpdateId(phoneUser.Id, updateC)
+		middleware.StopExec(err)
+	}
+	returnfun.ReturnOKJson(c, "")
+	return
 }
 
 // token 验证

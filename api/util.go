@@ -35,7 +35,7 @@ func Auth(c *gin.Context) {
 		return
 	}
 
-	result := auth.AuthLoginAndRole(AuthOption, token, c.Request.Method, c.Request.RequestURI, "")
+	result := auth.AuthLoginAndRole(AuthOption, token, c.Request.Method, c.Request.URL.Path, "")
 	debugPrintUserRoleInfo(c, result)
 
 	if result.Result == auth.AuthResultOK {

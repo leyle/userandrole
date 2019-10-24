@@ -220,6 +220,11 @@ func DeleteRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 		return
 	}
 
+	if id == roleapp.DefaultRoleId {
+		returnfun.Return403Json(c, "无权做此修改")
+		return
+	}
+
 	// op history
 	curUser, _ := GetCurUserAndRole(c)
 	opAction := fmt.Sprintf("删除role")

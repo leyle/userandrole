@@ -119,6 +119,11 @@ func main() {
 		WeChatOpt: wxOpt,
 		PhoneOpt: smsOpt,
 	}
+
+	middleware.AddIgnoreReadReqBodyPath("/api/user/idpasswd/login",
+												"/api/user/idpasswd/resetpasswd",
+												"/api/user/idpasswd/changepasswd",
+												"/api/user/idpasswd")
 	api.UserRouter(userOption, apiRouter.Group(""))
 
 	// 用户与权限映射关系的接口

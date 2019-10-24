@@ -163,7 +163,6 @@ func UnWrapRoles(roles []*Role) []*Item {
 // 生成一个 admin 账户 role
 func InsuranceAdminRole(db *dbandmq.Ds) (*Role, error) {
 	// items
-
 	var itemIds []string
 	for _, itemName := range AdminItemNames {
 		item, err := addAdminItem(db, itemName)

@@ -23,6 +23,7 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 	}
 
 	if uwr == nil {
+		Logger.Debugf("", "用户[%s]无任何角色，准备分配默认角色", userId)
 		// 用户没有任何授权，返回默认角色
 		uwr = &UserWithRole{
 			Id:       util.GenerateDataId(),

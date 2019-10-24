@@ -2,7 +2,9 @@ package auth
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-redis/redis"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userandrole"
@@ -111,11 +113,17 @@ func AuthRole(ao *Option, userId, method, uri, resource string) ([]*roleapp.Role
 
 	// 检查权限，path 支持通配符，这里需要支持
 	items := roleapp.UnWrapRoles(userWithRoles.Roles)
+
 	if !hasPermission(items, method, uri, resource) {
 		return userWithRoles.Roles, NoPermission
 	}
 
 	return userWithRoles.Roles, nil
+}
+
+func printStruct(info interface{}) {
+	d, _ := jsoniter.MarshalToString(info)
+	fmt.Println(d)
 }
 
 func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
@@ -126,11 +134,12 @@ func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
 	// 按照 method 分组 key 是 method， value 是 uri 的列表
 	infos := make(map[string][]string)
 	for _, item := range items {
-		tm := item.Method
-		if val, ok := infos[tm]; ok {
-			val = append(val, item.Path)
+		ps, ok := infos[item.Method]
+		if ok {
+			ps = append(ps, item.Path)
+			infos[item.Method] = ps
 		} else {
-			infos[tm] = []string{item.Path}
+			infos[item.Method] = []string{item.Path}
 		}
 	}
 
@@ -140,10 +149,12 @@ func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
 		return false
 	}
 
+	found := false
 	for _, uri := range uris {
 		// 数据库保存的 uri 支持一个 * 通配符
 		if uri == "*" {
-			return true
+			found = true
+			break
 		}
 
 		// 包含通配符，需要正则校验
@@ -157,18 +168,24 @@ func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
 			}
 			match := re.MatchString(path)
 			if match {
-				return true
+				found = true
+				break
+			} else {
+				continue
 			}
-
 		} else {
 			// 否则直接对比
 			if uri == path {
-				return true
+				found = true
+				break
 			}
 		}
 	}
 
+	if found {
+		return true
+	}
+
 	return false
 }
-
 

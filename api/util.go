@@ -31,7 +31,6 @@ func Auth(c *gin.Context) {
 	if token == "" {
 		Logger.Error(middleware.GetReqId(c), "请求接口中无token值")
 		returnfun.Return401Json(c, "No token")
-		c.Next()
 		return
 	}
 
@@ -42,11 +41,9 @@ func Auth(c *gin.Context) {
 		c.Set(AuthResultCtxKey, result)
 	} else if result.Result == auth.AuthResultInValidToken {
 		returnfun.Return401Json(c, "Invalid token")
-		c.Next()
 		return
 	} else if result.Result == auth.AuthResultInValidRole {
 		returnfun.Return403Json(c, "No permission")
-		c.Next()
 		return
 	}
 

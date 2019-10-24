@@ -134,6 +134,8 @@ func CheckToken(r *redis.Client, token string) (*TokenVal, error) {
 		return nil, err
 	}
 
+	Logger.Debugf("", "CheckToken 成功，用户[%s][%s][%s]", tkVal.User.Id, tkVal.User.Name, tkVal.User.LoginType)
+
 	return tkVal, nil
 }
 

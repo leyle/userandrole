@@ -50,34 +50,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	mgo := &dbandmq.MgoOption{
-		Host:     conf.Mongodb.Host,
-		Port:    conf.Mongodb.Port,
-		User:     conf.Mongodb.User,
-		Passwd:   conf.Mongodb.Passwd,
-		Database: conf.Mongodb.Database,
-	}
-
-	db := dbandmq.NewDs(mgo)
-	defer db.Close()
+	ds := dbandmq.NewDs(conf.Mongodb.Host, conf.Mongodb.Port, conf.Mongodb.User, conf.Mongodb.Passwd, conf.Mongodb.Database)
+	defer ds.Close()
 
 	// 创建 indexkey
-	addIndexkey(db)
-	err = db.InsureCollectionKeys()
+	addIndexkey()
+	err = ds.InsureCollectionKeys()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	// 初始化 admin 和相关权限
-	err = userandrole.InitAdminWithRole(db)
+	err = userandrole.InitAdminWithRole(ds)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	// 初始化普通用户角色
-	_, err = roleapp.InsuranceDefaultRole(db)
+	_, err = roleapp.InsuranceDefaultRole(ds)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -86,7 +78,7 @@ func main() {
 	// 初始化验证相关需要的配置
 	authOption := &Option{
 		R:   rClient,
-		Mgo: mgo,
+		Ds: ds,
 	}
 	api.AuthOption = authOption
 
@@ -97,7 +89,7 @@ func main() {
 	apiRouter := r.Group("/api")
 
 	// 权限接口
-	api.RoleRouter(db, apiRouter.Group(""))
+	api.RoleRouter(ds, apiRouter.Group(""))
 
 	// 用户接口
 	// 微信配置
@@ -122,7 +114,7 @@ func main() {
 		Default: true,
 	}
 	userOption := &api.UserOption{
-		Ds: db,
+		Ds: ds,
 		R:  rClient,
 		WeChatOpt: wxOpt,
 		PhoneOpt: smsOpt,
@@ -130,7 +122,7 @@ func main() {
 	api.UserRouter(userOption, apiRouter.Group(""))
 
 	// 用户与权限映射关系的接口
-	api.UserWithRoleRouter(db, apiRouter.Group(""))
+	api.UserWithRoleRouter(ds, apiRouter.Group(""))
 
 	// 系统配置的接口
 	// 过滤掉本接口返回的数据
@@ -149,7 +141,7 @@ func main() {
 	}
 }
 
-func addIndexkey(db *dbandmq.Ds) {
+func addIndexkey() {
 	// user
 	dbandmq.AddIndexKey(userapp.IKIdPasswd)
 	dbandmq.AddIndexKey(userapp.IKPhone)

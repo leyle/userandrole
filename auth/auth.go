@@ -15,15 +15,15 @@ import (
 // 登录信息有效性验证与角色权限验证
 type Option struct {
 	R   *redis.Client
-	Mgo *dbandmq.MgoOption
+	Ds *dbandmq.Ds
 	db  *dbandmq.Ds // 临时存放，使用完毕会销毁
 }
 
 func (ao *Option) new() *Option {
-	db := dbandmq.NewDs(ao.Mgo)
+	db := ao.Ds.CopyDs()
 	newAo := &Option{
 		R:   ao.R,
-		Mgo: ao.Mgo,
+		Ds: ao.Ds,
 		db:  db,
 	}
 

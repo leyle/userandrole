@@ -289,8 +289,6 @@ func QueryPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 		} else {
 			andCondition = append(andCondition, bson.M{"deleted": false})
 		}
-	} else {
-		andCondition = append(andCondition, bson.M{"deleted": false})
 	}
 
 	query := bson.M{}

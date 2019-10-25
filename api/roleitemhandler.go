@@ -212,9 +212,6 @@ func QueryItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 		} else {
 			andCondition = append(andCondition, bson.M{"deleted": false})
 		}
-	} else {
-		// 默认仅展示未删除的
-		andCondition = append(andCondition, bson.M{"deleted": false})
 	}
 
 	query := bson.M{}

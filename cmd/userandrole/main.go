@@ -82,6 +82,13 @@ func main() {
 	}
 	api.AuthOption = authOption
 
+	// 初始化数据库中记录的 role item 等信息
+	err = rbacHelper(ds)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if !conf.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -163,3 +170,4 @@ func addIndexkey() {
 	// ophistory
 	dbandmq.AddIndexKey(ophistory.IKLoginHistory)
 }
+

@@ -10,6 +10,7 @@ import (
 	"github.com/leyle/ginbase/util"
 	"github.com/leyle/userandrole/ophistory"
 	"github.com/leyle/userandrole/userandrole"
+	"github.com/leyle/userandrole/userapp"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -66,6 +67,9 @@ func AddRolesToUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	err = userandrole.SaveUserWithRole(db, uwr, update)
 	middleware.StopExec(err)
 
+	// 同步追加操作记录到对应的用户上
+	_ = userapp.AppendOpHistoryToUser(db, form.UserId, opHis)
+
 	returnfun.ReturnOKJson(c, uwr)
 	return
 }
@@ -116,6 +120,9 @@ func RemoveRolesFromUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	err = userandrole.UpdateUserWithRole(db, uwr)
 	middleware.StopExec(err)
+
+	// 同步操作记录到用户历史记录
+	_ = userapp.AppendOpHistoryToUser(db, form.UserId, opHis)
 	returnfun.ReturnOKJson(c, uwr)
 	return
 }

@@ -560,3 +560,22 @@ func IsValidPlatform(p string) bool {
 
 	return false
 }
+
+// 追加用户的变更历史记录
+func AppendOpHistoryToUser(db *dbandmq.Ds, id string, op *ophistory.OperationHistory) error {
+	update := bson.M{
+		"$set": bson.M{
+			"updateT": util.GetCurTime(),
+		},
+		"$push": bson.M{
+			"history": op,
+		},
+	}
+
+	err := db.C(CollectionNameUser).UpdateId(id, update)
+	if err != nil {
+		Logger.Errorf("", "更新用户[%s]操作历史[%s]失败", id, op.Action)
+		return err
+	}
+	return nil
+}

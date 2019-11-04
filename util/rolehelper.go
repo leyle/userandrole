@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"errors"
@@ -9,12 +9,13 @@ import (
 )
 
 // 初始化所有的 api item 到数据库中
-func rbacHelper(db *dbandmq.Ds) error {
+func RbacHelper(db *dbandmq.Ds) error {
 	var err error
 	t := util.GetCurTime()
 
 	Logger.Debug("", "开始初始化 role items...")
 
+	// role items
 	defaultRoleItems := []*roleapp.Item {
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),
@@ -74,7 +75,7 @@ func rbacHelper(db *dbandmq.Ds) error {
 			Path:     "/api/role/items",
 		},
 
-		////////////////////////////////////
+		//////////////////////////////////// permission
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),
 			Name:     "新建permission",
@@ -148,6 +149,18 @@ func rbacHelper(db *dbandmq.Ds) error {
 			Name:     "删除role",
 			Method:   "DELETE",
 			Path:     "/api/role/role/*",
+		},
+		&roleapp.Item{
+			Id:       util.GenerateDataId(),
+			Name:     "给role添加childrole",
+			Method:   "POST",
+			Path:     "/api/role/role/*/addchildrole",
+		},
+		&roleapp.Item{
+			Id:       util.GenerateDataId(),
+			Name:     "删除role某些childrole",
+			Method:   "POST",
+			Path:     "/api/role/role/*/delchildrole",
 		},
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),
@@ -356,7 +369,7 @@ func insurenItem(db *dbandmq.Ds, item *roleapp.Item) (*roleapp.Item, error) {
 		return dbitem, nil
 	}
 
-	Logger.Debug("", "item[%s][%s][%s]不存在， 准备创建", item.Name, item.Method, item.Path)
+	Logger.Debugf("", "item[%s][%s][%s]不存在， 准备创建", item.Name, item.Method, item.Path)
 	err = roleapp.SaveItem(db, item)
 	return item, err
 }

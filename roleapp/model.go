@@ -115,11 +115,20 @@ type Role struct {
 	Menu string `json:"menu" bson:"menu"`
 	Button string `json:"button" bson:"button"`
 
+	// 包含的下属 role 列表，当前 role 所属用户可以给自己的下属用户赋予的权限
+	ChildrenRoles []*ChildRole `json:"childrenRole" bson:"childrenRole"`
+
 	Deleted bool `json:"deleted" bson:"deleted"`
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
+}
+
+// 记录值，归属于某个上层 role
+type ChildRole struct {
+	Id string `json:"id" bson:"id"` // role Id
+	Name string `json:"name" bson:"name"` // role name，展示查看用
 }
 
 // 根据 id 读取 item

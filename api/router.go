@@ -110,6 +110,16 @@ func RoleRouter(db *dbandmq.Ds, g *gin.RouterGroup) {
 			DeleteRoleHandler(c, db)
 		})
 
+		// 给 role 添加 childrole
+		rR.POST("/:id/addchildrole", func(c *gin.Context) {
+			AddChildRoleToRoleHandler(c, db)
+		})
+
+		// 删除 role 的 childrole
+		rR.POST("/:id/delchildrole", func(c *gin.Context) {
+			DelChildRoleFromRoleHandler(c, db)
+		})
+
 		// 查看 role 明细
 		rR.GET("/:id", func(c *gin.Context) {
 			GetRoleInfoHandler(c, db)

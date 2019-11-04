@@ -35,7 +35,7 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 		uwr.RoleIds = append(uwr.RoleIds, roleapp.DefaultRoleId)
 	}
 
-	roles, err := roleapp.GetRolesByRoleIds(db, uwr.RoleIds)
+	roles, err := roleapp.GetRolesByRoleIds(db, uwr.RoleIds, true)
 	if err != nil {
 		return nil, err
 	}

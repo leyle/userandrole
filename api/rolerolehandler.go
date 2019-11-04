@@ -249,6 +249,172 @@ func DeleteRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	return
 }
 
+// 给 role 添加 childrole
+type ChildRoleForm struct {
+	Roles []*roleapp.ChildRole `json:"childrenRole" binding:"required"`
+}
+func AddChildRoleToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
+	var form ChildRoleForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
+
+	roleId := c.Param("id")
+	db := ds.CopyDs()
+	defer db.Close()
+
+	dbRole, err := roleapp.GetRoleById(db, roleId, false)
+	middleware.StopExec(err)
+	if dbRole == nil {
+		returnfun.ReturnErrJson(c, "无指定id的role信息")
+		return
+	}
+	if dbRole.Deleted {
+		returnfun.ReturnErrJson(c, "角色已被删除，要修改请先恢复此角色")
+		return
+	}
+
+	// 检查要添加的 roleId 的有效性
+	var roleIds []string
+	for _, r := range form.Roles {
+		roleIds = append(roleIds, r.Id)
+	}
+	roleIds = util.UniqueStringArray(roleIds)
+
+	addRoles, err := roleapp.GetRolesByRoleIds(db, roleIds, false)
+	middleware.StopExec(err)
+	findR := func(rid string) *roleapp.Role {
+		for _, ar := range addRoles {
+			if ar.Id == rid {
+				return ar
+			}
+		}
+		return nil
+	}
+	var validRoles []*roleapp.ChildRole
+	var invalidRoles []*roleapp.ChildRole
+	for _, addr := range form.Roles {
+		vr := findR(addr.Id)
+		if vr != nil {
+			validRoles = append(validRoles, addr)
+		} else {
+			invalidRoles = append(invalidRoles, addr)
+		}
+	}
+
+	if len(validRoles) == 0 {
+		returnfun.ReturnErrJson(c, "要添加的子角色全部无效")
+		return
+	}
+
+	// 当前角色已有的 role 和新的 role 要去重
+	var allRoles []*roleapp.ChildRole
+	allRoles = append(allRoles, validRoles...)
+	if len(dbRole.ChildrenRoles) > 0 {
+		allRoles = append(allRoles, dbRole.ChildrenRoles...)
+	}
+
+	roleMap := make(map[string]*roleapp.ChildRole)
+	for _, r := range allRoles {
+		roleMap[r.Id] = r
+	}
+	allRoles = []*roleapp.ChildRole{}
+	for _, v := range roleMap {
+		allRoles = append(allRoles, v)
+	}
+
+	// op history
+	curUser, _ := GetCurUserAndRole(c)
+	opAction := fmt.Sprintf("添加 childrole, %s", validRoles)
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
+
+	update := bson.M{
+		"$set": bson.M{
+			"childrenRole": allRoles,
+			"updateT": util.GetCurTime(),
+		},
+		"$push": bson.M{
+			"history": opHis,
+		},
+	}
+
+	err = db.C(roleapp.CollectionNameRole).UpdateId(dbRole.Id, update)
+	middleware.StopExec(err)
+
+	retData := gin.H{
+		"validRoles": validRoles,
+		"invalidRoles": invalidRoles,
+	}
+
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 从 role 中移除 childrole
+func DelChildRoleFromRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
+	var form ChildRoleForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
+
+	roleId := c.Param("id")
+	db := ds.CopyDs()
+	defer db.Close()
+
+	dbRole, err := roleapp.GetRoleById(db, roleId, false)
+	middleware.StopExec(err)
+	if dbRole == nil {
+		returnfun.ReturnErrJson(c, "无指定id的role信息")
+		return
+	}
+	if dbRole.Deleted {
+		returnfun.ReturnErrJson(c, "角色已被删除，要修改请先恢复此角色")
+		return
+	}
+
+	// 删除的时候，就直接循环删除即可
+	if len(dbRole.ChildrenRoles) == 0 {
+		returnfun.ReturnOKJson(c, "")
+		return
+	}
+
+	findR := func(rid string) *roleapp.ChildRole {
+		for _, r := range form.Roles {
+			if rid == r.Id {
+				return r
+			}
+		}
+		return nil
+	}
+
+	var remainRoles []*roleapp.ChildRole
+	for _, dbr := range dbRole.ChildrenRoles {
+		cr := findR(dbr.Id)
+		if cr == nil {
+			remainRoles = append(remainRoles, dbr)
+		}
+	}
+
+	// op history
+	curUser, _ := GetCurUserAndRole(c)
+	opAction := fmt.Sprintf("删除 childrole %s", form.Roles)
+	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
+
+	update := bson.M{
+		"$set": bson.M{
+			"childrenRole": remainRoles,
+			"updateT": util.GetCurTime(),
+		},
+		"$push": bson.M{
+			"history": opHis,
+		},
+	}
+
+	err = db.C(roleapp.CollectionNameRole).UpdateId(dbRole.Id, update)
+	middleware.StopExec(err)
+
+	returnfun.ReturnOKJson(c, "")
+	return
+}
+
 // 读取 role 明细
 func GetRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 	id := c.Param("id")

@@ -11,7 +11,7 @@ import (
 )
 
 // 根据 roleId 列表读取完整的 roles 信息
-func GetRolesByRoleIds(db *dbandmq.Ds, roleIds []string) ([]*Role, error) {
+func GetRolesByRoleIds(db *dbandmq.Ds, roleIds []string, more bool) ([]*Role, error) {
 	if len(roleIds) > 1 {
 		roleIds = util.UniqueStringArray(roleIds)
 	}
@@ -28,6 +28,10 @@ func GetRolesByRoleIds(db *dbandmq.Ds, roleIds []string) ([]*Role, error) {
 	if err != nil {
 		Logger.Errorf("", "根据roleIds读取role信息失败, %s", err.Error())
 		return nil, err
+	}
+
+	if !more {
+		return roles, nil
 	}
 
 	// 并行的去完善 roles 信息

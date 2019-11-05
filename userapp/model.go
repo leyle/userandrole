@@ -54,7 +54,7 @@ const CombineAccountBanReason = "合并账户，本账户停用"
 type User struct {
 	Id string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"` // 如果是 id 登录，就是 id，如果是email 登录，就是 email，如果是手机号，就是手机号，如果是微信/QQ就是暱称
-	Avatar string `json:"avatar" bson:"-"`
+	Avatar string `json:"avatar" bson:"avatar"`
 
 	// 封禁
 	Ban       bool   `json:"ban" bson:"ban"`
@@ -92,6 +92,7 @@ type UserLoginIdPasswdAuth struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`
 	LoginId string `json:"loginId" bson:"loginId"`
+	Avatar string `json:"avatar" bson:"avatar"`
 	Salt string `json:"-" bson:"salt"`
 	Passwd string `json:"-" bson:"passwd"`
 	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，修改密码后就是 false, 自主注册，是 false
@@ -111,6 +112,7 @@ type PhoneAuth struct {
 	Id string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`
 	Phone string `json:"phone" bson:"phone"`
+	Avatar string `json:"avatar" bson:"avatar"`
 	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，自主注册，是 false
 	SelfReg bool `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
 	CreateT *util.CurTime `json:"-" bson:"createT"`
@@ -255,6 +257,7 @@ func saveWeChatLogin(db *dbandmq.Ds, wxInfo *oauth.UserInfo) (*User, error) {
 	user := &User{
 		Id:        util.GenerateDataId(),
 		Name:      wxInfo.Nickname,
+		Avatar: wxInfo.HeadImgURL,
 		Ban:       false,
 		BanT:      0,
 		BanReason: "",
@@ -333,7 +336,7 @@ func SavePhoneLogin(db *dbandmq.Ds, r *redis.Client, phone string) (*User, strin
 	}
 
 	if user == nil {
-		user, err = savePhoneLogin(db, phone)
+		user, err = savePhoneLogin(db, phone, "")
 		if err != nil {
 			return nil, "", err
 		}
@@ -352,11 +355,11 @@ func SavePhoneLogin(db *dbandmq.Ds, r *redis.Client, phone string) (*User, strin
 	return user, token, nil
 }
 
-func savePhoneLogin(db *dbandmq.Ds, phone string) (*User, error) {
+func savePhoneLogin(db *dbandmq.Ds, phone, avatar string) (*User, error) {
 	user := &User{
 		Id:        util.GenerateDataId(),
 		Name:      phone,
-		Avatar:    "",
+		Avatar:    avatar,
 		Ban:       false,
 		BanT:      0,
 		BanReason: "",
@@ -368,6 +371,7 @@ func savePhoneLogin(db *dbandmq.Ds, phone string) (*User, error) {
 		Id:      util.GenerateDataId(),
 		UserId:  user.Id,
 		Phone:   phone,
+		Avatar: avatar,
 		Init:    false,
 		CreateT: user.CreateT,
 		UpdateT: user.UpdateT,
@@ -393,8 +397,8 @@ func savePhoneLogin(db *dbandmq.Ds, phone string) (*User, error) {
 }
 
 // 管理员创建 phone 账户
-func InitPhoneAuth(db *dbandmq.Ds, phone string) (*User, error) {
-	return savePhoneLogin(db, phone)
+func InitPhoneAuth(db *dbandmq.Ds, phone, avatar string) (*User, error) {
+	return savePhoneLogin(db, phone, avatar)
 }
 
 func GetUserByPhone(db *dbandmq.Ds, phone string) (*User, error) {

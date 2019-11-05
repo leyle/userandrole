@@ -1,13 +1,13 @@
 package userandrole
 
 import (
+	. "github.com/leyle/ginbase/consolelog"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/util"
 	"github.com/leyle/userandrole/roleapp"
 	"github.com/leyle/userandrole/userapp"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	. "github.com/leyle/ginbase/consolelog"
 )
 
 func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
@@ -41,7 +41,71 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 	}
 	uwr.Roles = roles
 
+	// 扩展展开 menus 和 buttons
+	menus, buttons := UnwrapRoleMenuAndButton(roles)
+	uwr.Menus = menus
+	uwr.Buttons = buttons
+
+	// 展开所有的角色
+	var childrenRole []*roleapp.ChildRole
+	for _, role := range roles {
+		if len(role.ChildrenRoles) > 0 {
+			childrenRole = append(childrenRole, role.ChildrenRoles...)
+		}
+	}
+	if len(childrenRole) > 0 {
+		childrenRole = uniqueChildrenRole(childrenRole)
+		uwr.ChildrenRole = childrenRole
+	}
+
 	return uwr, nil
+}
+
+func uniqueChildrenRole(childrenRole []*roleapp.ChildRole) []*roleapp.ChildRole {
+	roleMap := make(map[string]*roleapp.ChildRole)
+	for _, cr := range childrenRole {
+		roleMap[cr.Id] = cr
+	}
+
+	var ret []*roleapp.ChildRole
+	for _, v := range roleMap {
+		ret = append(ret, v)
+	}
+	return ret
+}
+
+// 展开所有的 menus 和 buttons，包含了 role / permission / item 上的数据，去重
+func UnwrapRoleMenuAndButton(roles []*roleapp.Role) ([]string, []string) {
+	var menus []string
+	var buttons []string
+	for _, role := range roles {
+		if role.Menu != "" {
+			menus = append(menus, role.Menu)
+		}
+		if role.Button != "" {
+			buttons = append(buttons, role.Button)
+		}
+
+		for _, p := range role.Permissions {
+			if p.Menu != "" {
+				menus = append(menus, p.Menu)
+			}
+			if p.Button != "" {
+				buttons = append(buttons, p.Button)
+			}
+
+			for _, item := range p.Items {
+				if item.Menu != "" {
+					menus = append(menus, item.Menu)
+				}
+				if item.Button != "" {
+					buttons = append(buttons, item.Button)
+				}
+			}
+		}
+	}
+
+	return menus, buttons
 }
 
 // 初始化 admin role 和 admin account 的关系

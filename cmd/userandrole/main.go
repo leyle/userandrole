@@ -15,6 +15,7 @@ import (
 	"github.com/leyle/userandrole/userandrole"
 	"github.com/leyle/userandrole/userapp"
 	"github.com/leyle/userandrole/util"
+	ginbaseutil "github.com/leyle/ginbase/util"
 	"os"
 )
 
@@ -93,6 +94,9 @@ func main() {
 	if !conf.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	ginbaseutil.MAX_ONE_PAGE_SIZE = 10000
+
 	r := middleware.SetupGin()
 	apiRouter := r.Group("/api")
 

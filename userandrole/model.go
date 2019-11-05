@@ -25,6 +25,11 @@ type UserWithRole struct {
 	RoleIds []string      `json:"-" bson:"roleIds"`
 	Roles []*roleapp.Role `json:"roles" bson:"-"`
 
+	// 返回给前端的所有的 menu 和 button 集合
+	Menus []string `json:"menus" bson:"-"`
+	Buttons []string `json:"buttons" bson:"-"`
+	ChildrenRole []*roleapp.ChildRole `json:"childrenRole" bson:"-"` // 所有的子角色
+
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`

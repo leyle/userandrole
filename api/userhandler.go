@@ -25,11 +25,15 @@ import (
 type CreateIdPasswdForm struct {
 	LoginId string `json:"loginId" binding:"required"`
 	Passwd string `json:"passwd" binding:"required"`
+	Avatar string `json:"avatar"` // 头像，非必输
+	RoleIds []string `json:"roleIds"` // 角色列表，非必输，此处选择的角色只能是当前用户的自身或下属角色，api 管理员不受此规则的控制
 }
 func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 	var form CreateIdPasswdForm
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)
+
+	form.LoginId = strings.TrimSpace(form.LoginId)
 
 	// 悲观锁
 	lockVal, ok := dbandmq.AcquireLock(ro.R, form.LoginId, dbandmq.DEFAULT_LOCK_ACQUIRE_TIMEOUT, dbandmq.DEFAULT_LOCK_KEY_TIMEOUT)
@@ -62,6 +66,7 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 	user := &userapp.User{
 		Id:        util.GenerateDataId(),
 		Name:      form.LoginId,
+		Avatar: form.Avatar,
 		CreateT:   util.GetCurTime(),
 	}
 	user.UpdateT = user.CreateT
@@ -70,6 +75,7 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		Id:      util.GenerateDataId(),
 		UserId:  user.Id,
 		LoginId: form.LoginId,
+		Avatar: form.Avatar,
 		Salt:    salt,
 		Passwd:  hashP,
 		Init: true,
@@ -77,14 +83,22 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		UpdateT: user.CreateT,
 	}
 
-	// op history
-	curUser, _ := GetCurUserAndRole(c)
+	curUser, curRoles := GetCurUserAndRole(c)
 	if curUser == nil {
 		returnfun.ReturnErrJson(c, "获取当前用户失败")
 		return
 	}
 
-	opAction := fmt.Sprintf("管理员新建账户密码登录方式，loginId[%s]", form.LoginId)
+	// 检查是否有赋予 role 的信息，如果有，需要检查是否有权限赋予相应的权限
+	if len(form.RoleIds) > 0 {
+		if !shareRoleIsValid(curUser, curRoles, form.RoleIds) {
+			returnfun.Return403Json(c, "当前用户无权赋予用户某些权限")
+			return
+		}
+	}
+
+	// op history
+	opAction := fmt.Sprintf("新建账户密码登录方式，loginId[%s]", form.LoginId)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 	user.History = append(user.History, opHis)
 
@@ -101,11 +115,49 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		returnfun.ReturnErrJson(c, err.Error())
 		return
 	}
-	ulpa.Passwd = ""
 	user.IdPasswd = ulpa
+
+	// 如果有 roleids 信息，同步赋予
+	if len(form.RoleIds) > 0 {
+		_, err = addRoleToUser(db, curUser, user.Id, form.RoleIds)
+		middleware.StopExec(err)
+	}
 
 	returnfun.ReturnOKJson(c, user)
 	return
+}
+
+// 检查当前用户是否有权限操作指定的 roleIds
+func shareRoleIsValid(curUser *userapp.User, curRoles []*roleapp.Role, roleIds []string) bool {
+	if curUser.Id == userapp.AdminUserId {
+		return true
+	}
+
+	var validRoleIds []string
+	for _, curRole := range curRoles {
+		validRoleIds = append(validRoleIds, curRole.Id)
+		for _, cr := range curRole.ChildrenRoles {
+			validRoleIds = append(validRoleIds, cr.Id)
+		}
+	}
+	validRoleIds = util.UniqueStringArray(validRoleIds)
+
+	findR := func(rid string) bool {
+		for _, r := range validRoleIds {
+			if r == rid {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, rid := range roleIds {
+		if !findR(rid) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // 修改自己的密码
@@ -228,6 +280,10 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	dbuser.Platform = form.Platform
 	dbuser.LoginType = userapp.LoginTypeIdPasswd
 
+	// 读取用户角色
+	uwr, err := userandrole.GetUserRoles(db, dbuser.Id)
+	middleware.StopExec(err)
+
 	// 检查一致，生成 token ，存储到数据库，返回用户token信息
 	token, err := userapp.GenerateToken(dbuser.Id, userapp.LoginTypeIdPasswd)
 	middleware.StopExec(err)
@@ -251,6 +307,9 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token": token,
 		"user": dbuser,
+		"roles": uwr.Roles,
+		"menus": uwr.Menus,
+		"buttons": uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -331,6 +390,10 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
+	// 读取用户角色
+	uwr, err := userandrole.GetUserRoles(db, user.Id)
+	middleware.StopExec(err)
+
 	// 保存登录成功的信息
 	lh := &ophistory.LoginHistory{
 		Id:        util.GenerateDataId(),
@@ -347,6 +410,9 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token": token,
 		"user": user,
+		"roles": uwr.Roles,
+		"menus": uwr.Menus,
+		"buttons": uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -411,6 +477,11 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
+	// 读取用户角色信息
+	uwr, err := userandrole.GetUserRoles(db, user.Id)
+	middleware.StopExec(err)
+
+
 	// 保存登录信息
 	lh := &ophistory.LoginHistory{
 		Id:        util.GenerateDataId(),
@@ -427,6 +498,9 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token": token,
 		"user": user,
+		"roles": uwr.Roles,
+		"menus": uwr.Menus,
+		"buttons": uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -463,11 +537,24 @@ func LogoutHandler(c *gin.Context, uo *UserOption) {
 // 管理员创建 phone 账户
 type CreateLoginPhoneForm struct {
 	Phone string `json:"phone" binding:"required"`
+	Avatar string `json:"avatar"`
+	RoleIds []string `json:"roleIds"` // 角色列表，非必输，此处选择的角色只能是当前用户的自身或下属角色，api 管理员不受此规则的控制
 }
 func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 	var form CreateLoginPhoneForm
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)
+
+	// 检查手机号格式的正确性 todo
+
+	// 检查是否有赋予 role 的信息，如果有，需要检查是否有权限赋予相应的权限
+	curUser, curRoles := GetCurUserAndRole(c)
+	if len(form.RoleIds) > 0 {
+		if !shareRoleIsValid(curUser, curRoles, form.RoleIds) {
+			returnfun.Return403Json(c, "当前用户无权赋予用户某些权限")
+			return
+		}
+	}
 
 	// 检查 phone 是否已存在，如果存在，返回存在的提示
 	db := uo.Ds.CopyDs()
@@ -480,11 +567,10 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
-	user, err = userapp.InitPhoneAuth(db, form.Phone)
+	user, err = userapp.InitPhoneAuth(db, form.Phone, form.Avatar)
 	middleware.StopExec(err)
 
 	// 记录 ophistory
-	curUser, _ := GetCurUserAndRole(c)
 	opAction := fmt.Sprintf("管理员给手机号[%s]初始化账户", form.Phone)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 	updateOp := bson.M{
@@ -494,6 +580,12 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 	}
 
 	_ = db.C(userapp.CollectionNameUser).UpdateId(user.Id, updateOp)
+
+	// 如果有 roleids 信息，同步赋予
+	if len(form.RoleIds) > 0 {
+		_, err = addRoleToUser(db, curUser, user.Id, form.RoleIds)
+		middleware.StopExec(err)
+	}
 
 	returnfun.ReturnOKJson(c, user)
 	return
@@ -638,6 +730,8 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 		Reason string `json:"reason"`
 		User *userapp.User `json:"user"`
 		Roles []*roleapp.Role `json:"roles"`
+		Menus []string `json:"menus"`
+		Buttons []string `json:"buttons"`
 	}
 
 	retData := &Ret{}
@@ -664,6 +758,8 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 	retData.Valid = true
 	retData.User = tVal.User
 	retData.Roles = uwr.Roles
+	retData.Menus = uwr.Menus
+	retData.Buttons = uwr.Buttons
 
 	returnfun.ReturnOKJson(c, retData)
 	return
@@ -872,6 +968,8 @@ func GetUserInfoHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"user": user,
 		"roles": uwr.Roles,
+		"menus": uwr.Menus,
+		"buttons": uwr.Buttons,
 	}
 	returnfun.ReturnOKJson(c, retData)
 	return

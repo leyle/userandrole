@@ -54,19 +54,19 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:       util.GenerateDataId(),
 			Name:     "修改item",
 			Method:   "PUT",
-			Path:     "/api/role/item/:id",
+			Path:     "/api/role/item/*",
 		},
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),
 			Name:     "删除item",
 			Method:   "DELETE",
-			Path:     "/api/role/item/:id",
+			Path:     "/api/role/item/*",
 		},
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),
 			Name:     "读取item明细",
 			Method:   "GET",
-			Path:     "/api/role/item/:id",
+			Path:     "/api/role/item/*",
 		},
 		&roleapp.Item{
 			Id:       util.GenerateDataId(),

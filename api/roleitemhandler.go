@@ -45,6 +45,10 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 		return
 	}
 
+	if strings.Contains(form.Path, ":id") {
+		form.Path = strings.ReplaceAll(form.Path, ":id", "*")
+	}
+
 	item := &roleapp.Item{
 		Id:       util.GenerateDataId(),
 		Name:     form.Name,
@@ -106,6 +110,10 @@ func UpdateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	if dbitem == nil {
 		returnfun.ReturnErrJson(c, "无指定id的数据")
 		return
+	}
+
+	if strings.Contains(form.Path, ":id") {
+		form.Path = strings.ReplaceAll(form.Path, ":id", "*")
 	}
 
 	dbitem.Name = form.Name

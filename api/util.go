@@ -75,5 +75,5 @@ func debugPrintUserRoleInfo(c *gin.Context, result *auth.AuthResult) {
 		names = append(names, role.Name)
 	}
 
-	Logger.Debugf(middleware.GetReqId(c), "用户[%s][%s]包含的角色为 %s",result.User.Id, result.User.Name, names)
+	Logger.Debugf(middleware.GetReqId(c), "用户[%s][%s]包含的权限结果[%d], 角色为 %s",result.User.Id, result.User.Name, result.Result, names)
 }

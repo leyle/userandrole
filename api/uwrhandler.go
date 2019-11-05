@@ -19,8 +19,6 @@ import (
 // 给用户添加 roles
 type AddRolesToUserForm struct {
 	UserId string `json:"userId" binding:"required"`
-	UserName string `json:"userName"`
-	Avatar string `json:"avatar"`
 	RoleIds []string `json:"roleIds" binding:"required"`
 }
 func AddRolesToUserHandler(c *gin.Context, ds *dbandmq.Ds) {
@@ -31,47 +29,60 @@ func AddRolesToUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	db := ds.CopyDs()
 	defer db.Close()
 
-	// 检查所有的 roleids 的有效性 todo
+	// 检查所有的 roleids 的有效性
+	curUser, curRoles := GetCurUserAndRole(c)
+	if curUser == nil {
+		middleware.StopExec(errors.New("获取当前用户信息失败"))
+		return
+	}
+
+	if !shareRoleIsValid(curUser, curRoles, form.RoleIds) {
+		returnfun.Return403Json(c, "当前用户无权给用户赋予某些权限")
+		return
+	}
 
 	// 不用锁定数据，低频操作
-
-	// 检查 uwr 是否存在，不存在新建，存在就是更新
-	uwr, err := userandrole.GetUserWithRoleByUserId(db, form.UserId)
+	uwr, err := addRoleToUser(db, curUser, form.UserId, form.RoleIds)
 	middleware.StopExec(err)
+
+	returnfun.ReturnOKJson(c, uwr)
+	return
+}
+
+func addRoleToUser(db *dbandmq.Ds, curUser *userapp.User, userId string, roleIds []string) (*userandrole.UserWithRole, error) {
+	// 检查 uwr 是否存在，不存在新建，存在就是更新
+	uwr, err := userandrole.GetUserWithRoleByUserId(db, userId)
+	if err != nil {
+		return nil, err
+	}
 	update := true
 	if uwr == nil {
 		update = false
 		uwr = &userandrole.UserWithRole{
 			Id:       util.GenerateDataId(),
-			UserId:   form.UserId,
-			UserName: form.UserName,
-			Avatar:   form.Avatar,
-			RoleIds:  form.RoleIds,
+			UserId:   userId,
+			RoleIds:  roleIds,
 			CreateT:  util.GetCurTime(),
 		}
 		uwr.UpdateT = uwr.CreateT
 	} else {
-		uwr.RoleIds = append(uwr.RoleIds, form.RoleIds...)
+		uwr.RoleIds = append(uwr.RoleIds, roleIds...)
 	}
 	uwr.RoleIds = util.UniqueStringArray(uwr.RoleIds)
 
-	curUser, _ := GetCurUserAndRole(c)
-	if curUser == nil {
-		middleware.StopExec(errors.New("获取当前用户信息失败"))
-		return
-	}
-	opAction := fmt.Sprintf("给用户[%s][%s]添加roleIds[%s]", form.UserId, form.UserName, form.RoleIds)
+	opAction := fmt.Sprintf("给用户[%s]添加roleIds %s", userId, roleIds)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 	uwr.History = append(uwr.History, opHis)
 
 	err = userandrole.SaveUserWithRole(db, uwr, update)
-	middleware.StopExec(err)
+	if err != nil {
+		return nil, err
+	}
 
 	// 同步追加操作记录到对应的用户上
-	_ = userapp.AppendOpHistoryToUser(db, form.UserId, opHis)
+	_ = userapp.AppendOpHistoryToUser(db, userId, opHis)
 
-	returnfun.ReturnOKJson(c, uwr)
-	return
+	return uwr, nil
 }
 
 // 取消 用户的某些 roles
@@ -88,6 +99,12 @@ func RemoveRolesFromUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	defer db.Close()
 
 	// 检查 roleids 有效性 todo
+	curUser, curRoles := GetCurUserAndRole(c)
+	if !shareRoleIsValid(curUser, curRoles, form.RoleIds) {
+		returnfun.Return403Json(c, "当前用户无权限删除用户某些权限")
+		return
+	}
+
 	uwr, err := userandrole.GetUserWithRoleByUserId(db, form.UserId)
 	middleware.StopExec(err)
 	if uwr == nil {
@@ -113,7 +130,6 @@ func RemoveRolesFromUserHandler(c *gin.Context, ds *dbandmq.Ds) {
 	uwr.UpdateT = util.GetCurTime()
 
 	// op history
-	curUser, _ := GetCurUserAndRole(c)
 	opAction := fmt.Sprintf("移除用户 roleIds %s", form.RoleIds)
 	opHis := ophistory.NewOpHistory(curUser.Id, curUser.Name, opAction)
 	uwr.History = append(uwr.History, opHis)

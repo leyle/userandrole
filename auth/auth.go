@@ -58,6 +58,7 @@ var NoPermission = errors.New("无当前资源权限")
 
 // resource 可以为空，为空时不校验
 func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResult {
+	Logger.Debugf("", "当前验证[%s][%s]", method, uri)
 	newAo := ao.new()
 	defer newAo.close()
 
@@ -72,6 +73,7 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 	ar.User = user
 
 	// 验证权限
+	Logger.Debugf("", "token有效，即将验证[%s][%s]的权限[%s][%s]", user.Id, user.Name, method, uri)
 	roles, err := AuthRole(newAo, user.Id, method, uri, resource)
 	if err != nil {
 		if err == NoPermission {
@@ -108,6 +110,7 @@ func AuthRole(ao *Option, userId, method, uri, resource string) ([]*roleapp.Role
 	}
 
 	if len(userWithRoles.Roles) == 0 {
+		Logger.Debugf("", "用户[%s][%s]无任何role", userWithRoles.UserId, userWithRoles.UserName)
 		return userWithRoles.Roles, NoPermission
 	}
 

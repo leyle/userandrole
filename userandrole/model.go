@@ -30,6 +30,8 @@ type UserWithRole struct {
 	Buttons []string `json:"buttons" bson:"-"`
 	ChildrenRole []*roleapp.ChildRole `json:"childrenRole" bson:"-"` // 所有的子角色
 
+	// 部门列表是自己可以管控的
+
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`

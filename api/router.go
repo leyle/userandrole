@@ -232,6 +232,10 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			TokenCheckHandler(c, uo)
 		})
 
+		// auth 验证
+		noAuthR.POST("/auth", func(c *gin.Context) {
+			AuthHandler(c, uo)
+		})
 	}
 }
 

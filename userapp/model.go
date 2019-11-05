@@ -336,7 +336,7 @@ func SavePhoneLogin(db *dbandmq.Ds, r *redis.Client, phone string) (*User, strin
 	}
 
 	if user == nil {
-		user, err = savePhoneLogin(db, phone, "")
+		user, err = savePhoneLogin(db, phone, "", true)
 		if err != nil {
 			return nil, "", err
 		}
@@ -355,7 +355,7 @@ func SavePhoneLogin(db *dbandmq.Ds, r *redis.Client, phone string) (*User, strin
 	return user, token, nil
 }
 
-func savePhoneLogin(db *dbandmq.Ds, phone, avatar string) (*User, error) {
+func savePhoneLogin(db *dbandmq.Ds, phone, avatar string, selfReg bool) (*User, error) {
 	user := &User{
 		Id:        util.GenerateDataId(),
 		Name:      phone,
@@ -373,8 +373,12 @@ func savePhoneLogin(db *dbandmq.Ds, phone, avatar string) (*User, error) {
 		Phone:   phone,
 		Avatar: avatar,
 		Init:    false,
+		SelfReg: selfReg,
 		CreateT: user.CreateT,
 		UpdateT: user.UpdateT,
+	}
+	if selfReg {
+		pa.Init = true
 	}
 
 	err := db.C(CollectionNameUser).Insert(user)
@@ -398,7 +402,7 @@ func savePhoneLogin(db *dbandmq.Ds, phone, avatar string) (*User, error) {
 
 // 管理员创建 phone 账户
 func InitPhoneAuth(db *dbandmq.Ds, phone, avatar string) (*User, error) {
-	return savePhoneLogin(db, phone, avatar)
+	return savePhoneLogin(db, phone, avatar, false)
 }
 
 func GetUserByPhone(db *dbandmq.Ds, phone string) (*User, error) {

@@ -697,7 +697,37 @@ var AuthOption = &auth.Option{} // 调用本包，需要给这个变量赋值
 
 1、初始化数据库连接需要的参数信息，给 AuthOption 变量赋值
 
+2、调用初始化方法 InitAuth()
+
 2、直接调用 Auth(c *gin.Context) 即可
+
+下面十一个例子
+
+```go
+	var err error
+
+	rOpt := &dbandmq.RedisOption{
+		Host: conf.Auth.Redis.Host,
+		Port: conf.Auth.Redis.Port,
+		Passwd: conf.Auth.Redis.Passwd,
+		DbNum: conf.Auth.Redis.Db,
+	}
+
+	redisC, err := dbandmq.NewRedisClient(rOpt)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	ao = &auth.Option{
+		R:   redisC,
+		Ds: ds,
+	}
+  
+	err = ao.InitAuth()
+```
+
+
 
 ---
 
@@ -722,3 +752,8 @@ type AuthResult struct {
 }
 ```
 
+---
+
+#### 通过 http api 来进行验证
+
+具体可以见上面的接口。

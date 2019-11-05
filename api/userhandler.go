@@ -79,6 +79,7 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		Salt:    salt,
 		Passwd:  hashP,
 		Init: true,
+		SelfReg: false,
 		CreateT: user.CreateT,
 		UpdateT: user.CreateT,
 	}

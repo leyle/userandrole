@@ -21,6 +21,42 @@ type Option struct {
 	db  *dbandmq.Ds // 临时存放，使用完毕会销毁
 }
 
+// 如果是其他包引用本程序，需要调用此方法初始化一些变量
+func (o *Option) InitAuth() error {
+	ao := o.new()
+	defer ao.close()
+
+	// 初始化adminid
+	admin, err := userapp.GetUserByLoginId(ao.db, userapp.AdminLoginId)
+	if err != nil {
+		return err
+	}
+	if admin == nil {
+		Logger.Errorf("", "读取admin账户信息为空，也许是你的数据库配置错误？")
+		return errors.New("读取admin账户信息为空，也许是数据库配置错误")
+	}
+	userapp.AdminUserId = admin.Id
+
+	// 初始化默认用户id
+	defaultRole, err := roleapp.GetRoleByName(ao.db, roleapp.DefaultRoleName, false)
+	if err != nil {
+		return err
+	}
+	if defaultRole == nil {
+		Logger.Errorf("", "读取默认角色信息为空，也许是你的数据库配置错误？")
+		return errors.New("读取默认角色信息为空，也许是数据库配置错误")
+	}
+	roleapp.DefaultRoleId = defaultRole.Id
+
+	// 载入不可修改信息
+	err = roleapp.LoadCanNotModifyIds(ao.db)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (ao *Option) new() *Option {
 	db := ao.Ds.CopyDs()
 	newAo := &Option{

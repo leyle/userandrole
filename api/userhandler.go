@@ -309,6 +309,7 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 		"token": token,
 		"user": dbuser,
 		"roles": uwr.Roles,
+		"childrenRole": uwr.ChildrenRole,
 		"menus": uwr.Menus,
 		"buttons": uwr.Buttons,
 	}
@@ -412,6 +413,7 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 		"token": token,
 		"user": user,
 		"roles": uwr.Roles,
+		"childrenRole": uwr.ChildrenRole,
 		"menus": uwr.Menus,
 		"buttons": uwr.Buttons,
 	}
@@ -500,6 +502,7 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 		"token": token,
 		"user": user,
 		"roles": uwr.Roles,
+		"childrenRole": uwr.ChildrenRole,
 		"menus": uwr.Menus,
 		"buttons": uwr.Buttons,
 	}
@@ -731,6 +734,7 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 		Reason string `json:"reason"`
 		User *userapp.User `json:"user"`
 		Roles []*roleapp.Role `json:"roles"`
+		ChildrenRole []*roleapp.ChildRole `json:"childrenRole"`
 		Menus []string `json:"menus"`
 		Buttons []string `json:"buttons"`
 	}
@@ -759,6 +763,7 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 	retData.Valid = true
 	retData.User = tVal.User
 	retData.Roles = uwr.Roles
+	retData.ChildrenRole = uwr.ChildrenRole
 	retData.Menus = uwr.Menus
 	retData.Buttons = uwr.Buttons
 

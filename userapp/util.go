@@ -2,6 +2,7 @@ package userapp
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/go-redis/redis"
 	jsoniter "github.com/json-iterator/go"
@@ -32,20 +33,25 @@ func GenerateToken(userId, loginType string) (string, error) {
 	return b64Token, nil
 }
 
+const combineKeyLength = 3
 func CombineRawString(userId, loginType string) string {
 	t := time.Now().Unix()
 	text := fmt.Sprintf("%s|%s|%d", userId, loginType, t)
 	return text
 }
 
-func ParseCombinedRawString(text string) (string, string, int64) {
+func ParseCombinedRawString(text string) (string, string, int64, error) {
+	Logger.Debugf("", "ParseCombinedRawString[%s]", text)
 	infos := strings.Split(text, "|")
+	if len(infos) != combineKeyLength {
+		return "", "", 0, errors.New("Invalid token, maybe old token,please logout and login again")
+	}
 	userId := infos[0]
 	loginType := infos[1]
 	st := infos[2]
 	t, _ := strconv.ParseInt(st, 10, 64)
 
-	return userId, loginType, t
+	return userId, loginType, t, nil
 }
 
 // 解析 token
@@ -64,9 +70,9 @@ func ParseToken(token string) (string, string, int64, error) {
 		return "", "", 0, err
 	}
 
-	userId, loginType, t := ParseCombinedRawString(text)
+	userId, loginType, t, err := ParseCombinedRawString(text)
 
-	return userId, loginType, t, nil
+	return userId, loginType, t, err
 }
 
 // 存储token

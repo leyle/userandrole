@@ -46,7 +46,9 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 	uwr.Menus = menus
 	uwr.Buttons = buttons
 
-	// 展开所有的角色
+	// 展开所有的子角色
+	// 子角色不做扩散继承操作，所以一个用户如果需要包含多个子角色，
+	// 只能通过直接包含的方法获取，不能通过 A 包含 B，B 包含 C，A 就包含了 C 的方式获取
 	var childrenRole []*roleapp.ChildRole
 	for _, role := range roles {
 		if len(role.ChildrenRoles) > 0 {

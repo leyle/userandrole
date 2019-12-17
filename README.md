@@ -743,6 +743,7 @@ var AuthOption = &auth.Option{} // 调用本包，需要给这个变量赋值
 const (
 	AuthResultInValidToken = 0 // token 错误，比如用户名或密码错误
 	AuthResultInValidRole = 1 // role 不对，无对应的操作权限
+	AuthResultNeedChangePasswd = 2 // 密码被初始化了，需要修改密码
 	AuthResultOK = 9 // 验证成功
 )
 type AuthResult struct {

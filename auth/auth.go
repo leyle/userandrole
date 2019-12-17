@@ -85,6 +85,7 @@ type AuthResult struct {
 	Result int             `json:"result"` // 验证结果，见上面字典
 	User   *userapp.User   `json:"user"`   // 用户信息
 	Roles  []*roleapp.Role `json:"roles"`   // 角色信息
+	ChildrenRole []*roleapp.ChildRole `json:"childrenRole"` // 展开所有的 role 的 childrenRole 存放在此处
 }
 
 func NewAuthResult() *AuthResult {
@@ -121,16 +122,20 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 
 	// 验证权限
 	Logger.Debugf("", "token有效，即将验证[%s][%s]的权限[%s][%s]", user.Id, user.Name, method, uri)
-	roles, err := AuthRole(newAo, user.Id, method, uri, resource)
+	uwr, err := AuthRole(newAo, user.Id, method, uri, resource)
 	if err != nil {
 		if err == NoPermission {
-			ar.Roles = roles
+			if uwr != nil {
+				ar.Roles = uwr.Roles
+				ar.ChildrenRole = uwr.ChildrenRole
+			}
 		}
 		ar.Result = AuthResultInValidRole
 		return ar
 	}
 
-	ar.Roles = roles
+	ar.Roles = uwr.Roles
+	ar.ChildrenRole = uwr.ChildrenRole
 	ar.Result = AuthResultOK
 
 	return ar
@@ -149,7 +154,7 @@ func AuthToken(ao *Option, token string) (*userapp.User, error) {
 }
 
 // 验证权限
-func AuthRole(ao *Option, userId, method, uri, resource string) ([]*roleapp.Role, error) {
+func AuthRole(ao *Option, userId, method, uri, resource string) (*userandrole.UserWithRole, error) {
 	userWithRoles, err := userandrole.GetUserRoles(ao.db, userId)
 	if err != nil {
 		Logger.Errorf("", "读取用户[%s]roles失败, %s", userId, err.Error())
@@ -158,17 +163,17 @@ func AuthRole(ao *Option, userId, method, uri, resource string) ([]*roleapp.Role
 
 	if len(userWithRoles.Roles) == 0 {
 		Logger.Debugf("", "用户[%s][%s]无任何role", userWithRoles.UserId, userWithRoles.UserName)
-		return userWithRoles.Roles, NoPermission
+		return userWithRoles, NoPermission
 	}
 
 	// 检查权限，path 支持通配符，这里需要支持
 	items := roleapp.UnWrapRoles(userWithRoles.Roles)
 
 	if !hasPermission(items, method, uri, resource) {
-		return userWithRoles.Roles, NoPermission
+		return userWithRoles, NoPermission
 	}
 
-	return userWithRoles.Roles, nil
+	return userWithRoles, nil
 }
 
 func printStruct(info interface{}) {

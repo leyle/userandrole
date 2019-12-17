@@ -78,6 +78,7 @@ func (ao *Option) close() {
 const (
 	AuthResultInValidToken = 0 // token 错误，比如用户名或密码错误
 	AuthResultInValidRole = 1 // role 不对，无对应的操作权限
+	AuthResultNeedChangePasswd = 2 // 密码被初始化了，需要修改密码
 	AuthResultOK = 9 // 验证成功
 )
 type AuthResult struct {
@@ -107,6 +108,16 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 		return ar
 	}
 	ar.User = user
+
+	// 检查是否需要强制修改密码
+	// 账户密码登录方式，如果 init 是 true，就需要强制修改密码
+	const changePasswdUri = "/api/user/idpasswd/changepasswd"
+	if user.LoginType == userapp.LoginTypeIdPasswd && user.IdPasswd.Init {
+		if uri != changePasswdUri {
+			ar.Result = AuthResultNeedChangePasswd
+			return ar
+		}
+	}
 
 	// 验证权限
 	Logger.Debugf("", "token有效，即将验证[%s][%s]的权限[%s][%s]", user.Id, user.Name, method, uri)

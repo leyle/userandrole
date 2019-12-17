@@ -37,16 +37,19 @@ func Auth(c *gin.Context) {
 	result := auth.AuthLoginAndRole(AuthOption, token, c.Request.Method, c.Request.URL.Path, "")
 	debugPrintUserRoleInfo(c, result)
 
-	if result.Result == auth.AuthResultOK {
-		c.Set(AuthResultCtxKey, result)
-	} else if result.Result == auth.AuthResultInValidToken {
+	switch result.Result {
+	case auth.AuthResultInValidToken:
 		returnfun.Return401Json(c, "Invalid token")
 		return
-	} else if result.Result == auth.AuthResultInValidRole {
+	case auth.AuthResultInValidRole:
 		returnfun.Return403Json(c, "No permission")
 		return
+	case auth.AuthResultNeedChangePasswd:
+		returnfun.Return403Json(c, "Need Change passwd first")
+		return
+	case auth.AuthResultOK:
+		c.Set(AuthResultCtxKey, result)
 	}
-
 	c.Next()
 }
 

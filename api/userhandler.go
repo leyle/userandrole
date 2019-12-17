@@ -514,10 +514,12 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 // 用户读取自己的信息，包含 role
 func MeHandler(c *gin.Context, uo *UserOption) {
 	user, roles := GetCurUserAndRole(c)
+	childrenRoles := userandrole.UnWrapChildrenRole(roles)
 
 	retData := gin.H{
 		"user": user,
 		"roles": roles,
+		"childrenRole": childrenRoles,
 	}
 
 	returnfun.ReturnOKJson(c, retData)

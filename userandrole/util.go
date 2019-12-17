@@ -47,20 +47,31 @@ func GetUserRoles(db *dbandmq.Ds, userId string) (*UserWithRole, error) {
 	uwr.Buttons = buttons
 
 	// 展开所有的子角色
-	// 子角色不做扩散继承操作，所以一个用户如果需要包含多个子角色，
-	// 只能通过直接包含的方法获取，不能通过 A 包含 B，B 包含 C，A 就包含了 C 的方式获取
+	uwr.ChildrenRole = UnWrapChildrenRole(roles)
+
+	return uwr, nil
+}
+
+// 展开所有的子角色
+// 子角色不做扩散继承操作，所以一个用户如果需要包含多个子角色，
+// 只能通过直接包含的方法获取，不能通过 A 包含 B，B 包含 C，A 就包含了 C 的方式获取
+func UnWrapChildrenRole(roles []*roleapp.Role) []*roleapp.ChildRole {
 	var childrenRole []*roleapp.ChildRole
 	for _, role := range roles {
 		if len(role.ChildrenRoles) > 0 {
 			childrenRole = append(childrenRole, role.ChildrenRoles...)
+			// 同时追加自身进入
+			childrenRole = append(childrenRole, &roleapp.ChildRole{
+				Id:   role.Id,
+				Name: role.Name,
+			})
 		}
 	}
 	if len(childrenRole) > 0 {
 		childrenRole = uniqueChildrenRole(childrenRole)
-		uwr.ChildrenRole = childrenRole
 	}
 
-	return uwr, nil
+	return childrenRole
 }
 
 func uniqueChildrenRole(childrenRole []*roleapp.ChildRole) []*roleapp.ChildRole {

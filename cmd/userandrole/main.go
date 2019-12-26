@@ -116,6 +116,10 @@ func main() {
 		AppId:  conf.WeChat.App.AppId,
 		Secret: conf.WeChat.App.Secret,
 	}
+	wxOpt[userapp.WeChatOptPlatformXiaoChengXu] = &userapp.WeChatOption{
+		AppId:  conf.WeChat.XiaoChengXu.AppId,
+		Secret: conf.WeChat.XiaoChengXu.Secret,
+	}
 	// 短信配置
 	smsOpt := &smsapp.SmsOption{
 		Account: conf.PhoneSms.Account,

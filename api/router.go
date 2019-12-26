@@ -214,9 +214,19 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			GetWeChatAppIdHandler(c, uo)
 		})
 
-		// 微信登录
+		// 微信 web/开放平台app 登录
 		noAuthR.POST("/wx/login", func(c *gin.Context) {
 			LoginByWeChatHandler(c, uo)
+		})
+
+		// 微信小程序获取 code2session
+		noAuthR.POST("/wx/xcxlogin", func(c *gin.Context) {
+			LoginByWeChatXiaoChengXuHandler(c, uo)
+		})
+
+		// 微信小程序从客户端传递用户信息给服务端，需要检验 token
+		userR.POST("/wx/xcxprofile", func(c *gin.Context) {
+			FullXiaoChengXuProfileHandler(c, uo)
 		})
 
 		// 手机号注册、登录

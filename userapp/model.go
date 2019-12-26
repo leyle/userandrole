@@ -15,7 +15,7 @@ import (
 
 // 定义一个程序管理员
 const (
-	AdminLoginId = "admin"
+	AdminLoginId     = "admin"
 	AdminLoginPasswd = "admin" // 系统初始化后，可以修改
 )
 
@@ -26,34 +26,35 @@ const TokenRedisPrefix = "USER:TOKEN:USERID"
 // 存储到 redis 中的 token 信息
 // 包含了 token 值外，还有用户信息
 type TokenVal struct {
-	Token string `json:"token"`
-	User *User `json:"user"`
-	T *util.CurTime `json:"t"`
+	Token string        `json:"token"`
+	User  *User         `json:"user"`
+	T     *util.CurTime `json:"t"`
 }
 
 // 登录方式
 const (
 	LoginTypeIdPasswd = "IDPASSWD" // 账户密码登录
-	LoginTypeEmail = "EMAIL"
-	LoginTypePhone = "PHONE"
-	LoginTypeWeChat = "WECHAT"
-	LoginTypeQQ = "QQ"
+	LoginTypeEmail    = "EMAIL"
+	LoginTypePhone    = "PHONE"
+	LoginTypeWeChat   = "WECHAT"
+	LoginTypeQQ       = "QQ"
 )
 
 // 登录平台
 const (
-	LoginPlatformH5 = "H5" // h5 页面
-	LoginPlatformPC = "PC" // pc browser
+	LoginPlatformH5      = "H5" // h5 页面
+	LoginPlatformPC      = "PC" // pc browser
 	LoginPlatformAndroid = "ANDROID"
-	LoginPlatformIOS = "IOS"
+	LoginPlatformIOS     = "IOS"
 )
 
 // 用户管理，支持域
 const CollectionNameUser = "user"
 const CombineAccountBanReason = "合并账户，本账户停用"
+
 type User struct {
-	Id string `json:"id" bson:"_id"`
-	Name string `json:"name" bson:"name"` // 如果是 id 登录，就是 id，如果是email 登录，就是 email，如果是手机号，就是手机号，如果是微信/QQ就是暱称
+	Id     string `json:"id" bson:"_id"`
+	Name   string `json:"name" bson:"name"` // 如果是 id 登录，就是 id，如果是email 登录，就是 email，如果是手机号，就是手机号，如果是微信/QQ就是暱称
 	Avatar string `json:"avatar" bson:"avatar"`
 
 	// 封禁
@@ -71,73 +72,83 @@ type User struct {
 	ReferId string `json:"referId" bson:"referId"`
 
 	// 以下内容是序列化到 redis 中需要的
-	Platform string `json:"platform" bson:"-"`
+	Platform  string `json:"platform" bson:"-"`
 	LoginType string `json:"loginType" bson:"-"`
 
-	IdPasswd *UserLoginIdPasswdAuth `json:"idPasswd" bson:"-"`
-	PhoneAuth *PhoneAuth `json:"phoneAuth" bson:"-"`
-	WeChatAuth *WeChatAuth `json:"weChatAuth" bson:"-"`
+	IdPasswd   *UserLoginIdPasswdAuth `json:"idPasswd" bson:"-"`
+	PhoneAuth  *PhoneAuth             `json:"phoneAuth" bson:"-"`
+	WeChatAuth *WeChatAuth            `json:"weChatAuth" bson:"-"`
 
 	Ip string `json:"ip" bson:"-"`
 }
 
 // 账户密码登录方式
 const CollectionNameIdPasswd = "idPasswdAuth"
+
 var IKIdPasswd = &dbandmq.IndexKey{
-	Collection:    CollectionNameIdPasswd,
-	SingleKey:     []string{"userId", "selfReg"},
-	UniqueKey:     []string{"loginId"},
+	Collection: CollectionNameIdPasswd,
+	SingleKey:  []string{"userId", "selfReg"},
+	UniqueKey:  []string{"loginId"},
 }
+
 type UserLoginIdPasswdAuth struct {
-	Id string `json:"id" bson:"_id"`
-	UserId string `json:"userId" bson:"userId"`
-	LoginId string `json:"loginId" bson:"loginId"`
-	Avatar string `json:"avatar" bson:"avatar"`
-	Salt string `json:"-" bson:"salt"`
-	Passwd string `json:"-" bson:"passwd"`
-	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，修改密码后就是 false, 自主注册，是 false
-	SelfReg bool `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
+	Id      string        `json:"id" bson:"_id"`
+	UserId  string        `json:"userId" bson:"userId"`
+	LoginId string        `json:"loginId" bson:"loginId"`
+	Avatar  string        `json:"avatar" bson:"avatar"`
+	Salt    string        `json:"-" bson:"salt"`
+	Passwd  string        `json:"-" bson:"passwd"`
+	Init    bool          `json:"init" bson:"init"`       // 是否初始化，帮人创建的时候，是 true，修改密码后就是 false, 自主注册，是 false
+	SelfReg bool          `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
 }
 
 // 手机验证码登录
 const CollectionNamePhone = "phoneAuth"
+
 var IKPhone = &dbandmq.IndexKey{
-	Collection:    CollectionNamePhone,
-	SingleKey:     []string{"userId", "selfReg"},
-	UniqueKey:     []string{"phone"},
+	Collection: CollectionNamePhone,
+	SingleKey:  []string{"userId", "selfReg"},
+	UniqueKey:  []string{"phone"},
 }
+
 type PhoneAuth struct {
-	Id string `json:"id" bson:"_id"`
-	UserId string `json:"userId" bson:"userId"`
-	Phone string `json:"phone" bson:"phone"`
-	Avatar string `json:"avatar" bson:"avatar"`
-	Init bool `json:"init" bson:"init"` // 是否初始化，帮人创建的时候，是 true，自主注册，是 false
-	SelfReg bool `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
+	Id      string        `json:"id" bson:"_id"`
+	UserId  string        `json:"userId" bson:"userId"`
+	Phone   string        `json:"phone" bson:"phone"`
+	Avatar  string        `json:"avatar" bson:"avatar"`
+	Init    bool          `json:"init" bson:"init"`       // 是否初始化，帮人创建的时候，是 true，自主注册，是 false
+	SelfReg bool          `json:"selfReg" bson:"selfReg"` // 是否自己主动注册的，还是管理员后台创建的
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
 }
 
 // 微信登录
 const CollectionNameWeChat = "weChatAuth"
+
 var IKWeChat = &dbandmq.IndexKey{
-	Collection:    CollectionNameWeChat,
-	SingleKey:     []string{"userId", "unionId"},
-	UniqueKey:     []string{"openId"},
+	Collection: CollectionNameWeChat,
+	SingleKey:  []string{"userId", "unionId"},
+	UniqueKey:  []string{"openId"},
 }
+
 type WeChatAuth struct {
-	Id string `json:"id" bson:"_id"`
+	Id     string `json:"id" bson:"_id"`
 	UserId string `json:"userId" bson:"userId"`
 
-	OpenId string `json:"openId" bson:"openId"`
-	UnionId string `json:"unionId" bson:"unionId"`
+	Platform string `json:"platform" bson:"platform"` // 使用 app 还是 h5 还是 小程序 登录的
+
+	OpenId   string `json:"openId" bson:"openId"`
+	UnionId  string `json:"unionId" bson:"unionId"`
+	SessionKey string `json:"-" bson:"sessionKey"` // 仅小程序登录方式有值
+
 	Nickname string `json:"nickname" bson:"nickname"`
-	Sex int32 `json:"sex" bson:"sex"`
-	Avatar string `json:"avatar" bson:"avatar"`
-	City string `json:"city" bson:"city"`
+	Sex      int32  `json:"sex" bson:"sex"`
+	Avatar   string `json:"avatar" bson:"avatar"`
+	City     string `json:"city" bson:"city"`
 	Province string `json:"province" bson:"province"`
-	Country string `json:"country" bson:"country"`
+	Country  string `json:"country" bson:"country"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`
 	UpdateT *util.CurTime `json:"-" bson:"updateT"`
@@ -145,13 +156,15 @@ type WeChatAuth struct {
 
 // 微信配置
 const (
-	WeChatOptPlatformWeb = "H5" // web 授权
-	WeChatOptPlatformApp = "APP" // app 登录
+	WeChatOptPlatformWeb         = "H5"          // web 授权
+	WeChatOptPlatformApp         = "APP"         // app 登录
+	WeChatOptPlatformXiaoChengXu = "XIAOCHENGXU" // app 登录
 )
+
 type WeChatOption struct {
-	AppId string
+	AppId  string
 	Secret string
-	Token string
+	Token  string
 	AesKey string
 }
 
@@ -200,28 +213,22 @@ func GetUserByLoginId(db *dbandmq.Ds, loginId string) (*User, error) {
 func GetWeChatConfig(r *redis.Client, platform string, opt *WeChatOption) *wechat.Config {
 	rOpt := r.Options()
 	rc := &cache.RedisOpts{
-		Host:        rOpt.Addr,
-		Password:    rOpt.Password,
-		Database:    rOpt.DB,
+		Host:     rOpt.Addr,
+		Password: rOpt.Password,
+		Database: rOpt.DB,
 	}
 
 	rCache := cache.NewRedis(rc)
-	if platform == WeChatOptPlatformWeb {
-		cf := &wechat.Config{
-			AppID:          opt.AppId,
-			AppSecret:      opt.Secret,
-			Token:          opt.Token,
-			EncodingAESKey: opt.AesKey,
-			Cache:          rCache,
-		}
-		return cf
-	} else {
-		cf := &wechat.Config{
-			AppID:          opt.AppId,
-			AppSecret:      opt.Secret,
-		}
-		return cf
+	cf := &wechat.Config{
+		AppID:     opt.AppId,
+		AppSecret: opt.Secret,
+		Cache:     rCache,
 	}
+	if platform == WeChatOptPlatformWeb {
+		cf.Token = opt.Token
+		cf.EncodingAESKey = opt.AesKey
+	}
+	return cf
 }
 
 // 存储或更新微信登录
@@ -257,7 +264,7 @@ func saveWeChatLogin(db *dbandmq.Ds, wxInfo *oauth.UserInfo) (*User, error) {
 	user := &User{
 		Id:        util.GenerateDataId(),
 		Name:      wxInfo.Nickname,
-		Avatar: wxInfo.HeadImgURL,
+		Avatar:    wxInfo.HeadImgURL,
 		Ban:       false,
 		BanT:      0,
 		BanReason: "",
@@ -371,7 +378,7 @@ func savePhoneLogin(db *dbandmq.Ds, phone, avatar string, selfReg bool) (*User, 
 		Id:      util.GenerateDataId(),
 		UserId:  user.Id,
 		Phone:   phone,
-		Avatar: avatar,
+		Avatar:  avatar,
 		Init:    false,
 		SelfReg: selfReg,
 		CreateT: user.CreateT,

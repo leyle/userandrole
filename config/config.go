@@ -45,6 +45,7 @@ type RedisConf struct {
 type WeChatLoginConf struct {
 	App *WeChatLoginAppConf `yaml:"app"`
 	Web *WeChatLoginWebConf `yaml:"web"`
+	XiaoChengXu *WeChatLoginAppConf `yaml:"xiaochengxu"`
 }
 
 // 微信 App 登录配置

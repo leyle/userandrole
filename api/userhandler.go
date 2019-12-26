@@ -15,19 +15,22 @@ import (
 	"github.com/leyle/userandrole/userandrole"
 	"github.com/leyle/userandrole/userapp"
 	"github.com/silenceper/wechat"
+	"github.com/silenceper/wechat/oauth"
 	"gopkg.in/mgo.v2/bson"
 	"math"
+	"net/http"
 	"strings"
 	"time"
 )
 
 // 通过账户密码数据，没有自己注册的，都是通过接口创建的
 type CreateIdPasswdForm struct {
-	LoginId string `json:"loginId" binding:"required"`
-	Passwd string `json:"passwd" binding:"required"`
-	Avatar string `json:"avatar"` // 头像，非必输
+	LoginId string   `json:"loginId" binding:"required"`
+	Passwd  string   `json:"passwd" binding:"required"`
+	Avatar  string   `json:"avatar"`  // 头像，非必输
 	RoleIds []string `json:"roleIds"` // 角色列表，非必输，此处选择的角色只能是当前用户的自身或下属角色，api 管理员不受此规则的控制
 }
+
 func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 	var form CreateIdPasswdForm
 	err := c.BindJSON(&form)
@@ -64,10 +67,10 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 	hashP := util.Sha256(passwd)
 
 	user := &userapp.User{
-		Id:        util.GenerateDataId(),
-		Name:      form.LoginId,
-		Avatar: form.Avatar,
-		CreateT:   util.GetCurTime(),
+		Id:      util.GenerateDataId(),
+		Name:    form.LoginId,
+		Avatar:  form.Avatar,
+		CreateT: util.GetCurTime(),
 	}
 	user.UpdateT = user.CreateT
 
@@ -75,10 +78,10 @@ func CreateLoginIdPasswdAccountHandler(c *gin.Context, ro *UserOption) {
 		Id:      util.GenerateDataId(),
 		UserId:  user.Id,
 		LoginId: form.LoginId,
-		Avatar: form.Avatar,
+		Avatar:  form.Avatar,
 		Salt:    salt,
 		Passwd:  hashP,
-		Init: true,
+		Init:    true,
 		SelfReg: false,
 		CreateT: user.CreateT,
 		UpdateT: user.CreateT,
@@ -165,6 +168,7 @@ func shareRoleIsValid(curUser *userapp.User, curRoles []*roleapp.Role, roleIds [
 type UpdatePasswdForm struct {
 	Passwd string `json:"passwd" binding:"required"`
 }
+
 func UpdatePasswdHandler(c *gin.Context, ro *UserOption) {
 	var form UpdatePasswdForm
 	err := c.BindJSON(&form)
@@ -213,9 +217,9 @@ func resetPasswd(db *dbandmq.Ds, r *redis.Client, userId, newP string) error {
 
 	update := bson.M{
 		"$set": bson.M{
-			"salt": salt,
-			"passwd": hashP,
-			"init": false,
+			"salt":    salt,
+			"passwd":  hashP,
+			"init":    false,
 			"updateT": util.GetCurTime(),
 		},
 	}
@@ -239,10 +243,11 @@ func resetPasswd(db *dbandmq.Ds, r *redis.Client, userId, newP string) error {
 
 // 使用账户密码登录
 type LoginIdPasswdForm struct {
-	LoginId string `json:"loginId" binding:"required"`
-	Passwd string `json:"passwd" binding:"required"`
+	LoginId  string `json:"loginId" binding:"required"`
+	Passwd   string `json:"passwd" binding:"required"`
 	Platform string `json:"platform" binding:"required"`
 }
+
 func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	var form LoginIdPasswdForm
 	err := c.BindJSON(&form)
@@ -306,12 +311,12 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	_ = ophistory.SaveLoginHistory(db, lh)
 
 	retData := gin.H{
-		"token": token,
-		"user": dbuser,
-		"roles": uwr.Roles,
+		"token":        token,
+		"user":         dbuser,
+		"roles":        uwr.Roles,
 		"childrenRole": uwr.ChildrenRole,
-		"menus": uwr.Menus,
-		"buttons": uwr.Buttons,
+		"menus":        uwr.Menus,
+		"buttons":      uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -334,17 +339,21 @@ func GetWeChatAppIdHandler(c *gin.Context, uo *UserOption) {
 
 	retData := gin.H{
 		"platform": platform,
-		"appId": opt.AppId,
+		"appId":    opt.AppId,
 	}
 	returnfun.ReturnOKJson(c, retData)
 	return
 }
 
 // 微信拉起授权
+// 如果是小程序授权，小程序只能从客户端获取用户信息，服务端获取不了用户信息
+// 服务端只能得到用户的 openId，需要判断是否用户需要拉取用户信息
+// 如果无 openid 对应的用户信息，就需要返回客户端指定错误，让客户端继续处理
 type LoginByWeChatForm struct {
-	Code string `json:"code" binding:"required"`
+	Code     string `json:"code" binding:"required"`
 	Platform string `json:"platform" binding:"required"`
 }
+
 func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 	var form LoginByWeChatForm
 	err := c.BindJSON(&form)
@@ -410,12 +419,197 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 	_ = ophistory.SaveLoginHistory(db, lh)
 
 	retData := gin.H{
-		"token": token,
-		"user": user,
-		"roles": uwr.Roles,
+		"token":        token,
+		"user":         user,
+		"roles":        uwr.Roles,
 		"childrenRole": uwr.ChildrenRole,
-		"menus": uwr.Menus,
-		"buttons": uwr.Buttons,
+		"menus":        uwr.Menus,
+		"buttons":      uwr.Buttons,
+	}
+
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 微信小程序登录
+type LoginByWeChatXCXForm struct {
+	Code string `json:"code" binding:"required"`
+}
+
+func LoginByWeChatXiaoChengXuHandler(c *gin.Context, uo *UserOption) {
+	var form LoginByWeChatXCXForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
+
+	platform := userapp.WeChatOptPlatformXiaoChengXu
+	wxOpt, ok := uo.WeChatOpt[platform]
+	if !ok {
+		Logger.Errorf(middleware.GetReqId(c), "发生严重错误，微信授权未做相关信息配置")
+		returnfun.ReturnJson(c, 500, 500, "微信登录未配置相关信息", "")
+		return
+	}
+
+	cf := userapp.GetWeChatConfig(uo.R, platform, wxOpt)
+	wc := wechat.NewWechat(cf)
+	wxa := wc.GetMiniProgram()
+
+	// code2 session
+	code := form.Code
+	c2s, err := wxa.Code2Session(code)
+	if err != nil {
+		Logger.Errorf(middleware.GetReqId(c), "根据code[%s]获取小程序code2Session失败, %s", code, err.Error())
+		returnfun.ReturnErrJson(c, err.Error())
+		return
+	}
+
+	// openId unionId session key 存储到用户信息中，先检查，后存储
+	// 三种情况
+	// 1. 全新用户，连 openId 都没有存储，存储用户信息，返回相关补充信息提示
+	// 2. 存储了 openId，但是没有存储相关用户信息，返回相关补充信息提示
+	// 3. 存储了 openId，同时也有用户信息，返回登录成功
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	wxInfo := &oauth.UserInfo{
+		OpenID:  c2s.OpenID,
+		Unionid: c2s.UnionID,
+	}
+	dbUser, err := userapp.GetUserByOpenId(db, wxInfo.OpenID)
+	middleware.StopExec(err)
+
+	// 1. 全新用户
+	// 存储并生成用户信息
+	if dbUser == nil {
+		_, token, err := userapp.SaveWeChatLogin(db, uo.R, wxInfo)
+		middleware.StopExec(err)
+
+		// 返回补充用户信息的提示
+		returnfun.ReturnJson(c, http.StatusOK, ErrCodeXiaoChengXuNeedProfile, "需要进一步完善 profile 信息", gin.H{"token": token})
+		return
+	}
+
+	if dbUser.Ban {
+		returnfun.Return401Json(c, "banned")
+		return
+	}
+
+	token, err := userapp.GenerateToken(dbUser.Id, userapp.LoginTypeWeChat)
+	middleware.StopExec(err)
+	err = userapp.SaveToken(uo.R, token, dbUser)
+	middleware.StopExec(err)
+
+	// 2. openId 存在，用户 profile 信息没有
+	// 简单使用 nickname 是否存在来判断
+	if dbUser.WeChatAuth.Nickname == "" {
+		// 返回补充用户信息的提示
+		returnfun.ReturnJson(c, http.StatusOK, ErrCodeXiaoChengXuNeedProfile, "需要进一步完善 profile 信息", gin.H{"token": token})
+		return
+	}
+
+	// 3. openId 存在，用户 profile 信息完整，直接生成 token 即可
+	// 读取用户角色
+	uwr, err := userandrole.GetUserRoles(db, dbUser.Id)
+	middleware.StopExec(err)
+
+	// 保存登录成功的信息
+	lh := &ophistory.LoginHistory{
+		Id:        util.GenerateDataId(),
+		UserId:    dbUser.Id,
+		UserName:  dbUser.Name,
+		LoginType: userapp.LoginTypeWeChat,
+		Platform:  platform,
+		Ip:        c.Request.RemoteAddr,
+		UserAgent: c.Request.UserAgent(),
+		LoginT:    util.GetCurTime(),
+	}
+	_ = ophistory.SaveLoginHistory(db, lh)
+
+	retData := gin.H{
+		"token":        token,
+		"user":         dbUser,
+		"roles":        uwr.Roles,
+		"childrenRole": uwr.ChildrenRole,
+		"menus":        uwr.Menus,
+		"buttons":      uwr.Buttons,
+	}
+
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 微信小程序完善相关 profile 信息
+type XiaoChengXuProfileForm struct {
+	Nickname string `json:"nickname"`
+	Sex int32 `json:"sex"`
+	Avatar string `json:"avatar"`
+	City string `json:"city"`
+	Province string `json:"province"`
+	Country string `json:"country"`
+}
+func FullXiaoChengXuProfileHandler(c *gin.Context, uo *UserOption) {
+	var form XiaoChengXuProfileForm
+	err := c.BindJSON(&form)
+	middleware.StopExec(err)
+
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser.LoginType != userapp.LoginTypeWeChat {
+		returnfun.ReturnErrJson(c, "错误的登录方式")
+		return
+	}
+
+	f := bson.M{
+		"_id": curUser.WeChatAuth.Id,
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"nickname": form.Nickname,
+			"sex": form.Sex,
+			"avatar": form.Avatar,
+			"city": form.City,
+			"province": form.Province,
+			"country": form.Country,
+			"updateT": util.GetCurTime(),
+		},
+	}
+
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	err = db.C(userapp.CollectionNameWeChat).Update(f, update)
+	middleware.StopExec(err)
+
+	// 刷新 token
+	wxInfo := &oauth.UserInfo{
+		OpenID: curUser.WeChatAuth.OpenId,
+	}
+
+	user, token, err := userapp.SaveWeChatLogin(db, uo.R, wxInfo)
+	middleware.StopExec(err)
+
+	uwr, err := userandrole.GetUserRoles(db, user.Id)
+	middleware.StopExec(err)
+
+	// 保存登录成功的信息
+	lh := &ophistory.LoginHistory{
+		Id:        util.GenerateDataId(),
+		UserId:    user.Id,
+		UserName:  user.Name,
+		LoginType: userapp.LoginTypeWeChat,
+		Platform:  userapp.LoginPlatformH5,
+		Ip:        c.Request.RemoteAddr,
+		UserAgent: c.Request.UserAgent(),
+		LoginT:    util.GetCurTime(),
+	}
+	_ = ophistory.SaveLoginHistory(db, lh)
+
+	retData := gin.H{
+		"token":        token,
+		"user":         user,
+		"roles":        uwr.Roles,
+		"childrenRole": uwr.ChildrenRole,
+		"menus":        uwr.Menus,
+		"buttons":      uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -427,6 +621,7 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 type SendSmsForm struct {
 	Phone string `json:"phone" binding:"required"`
 }
+
 func SendSmsHandler(c *gin.Context, uo *UserOption) {
 	var form SendSmsForm
 	err := c.BindJSON(&form)
@@ -447,10 +642,11 @@ func SendSmsHandler(c *gin.Context, uo *UserOption) {
 
 // 验证手机号
 type CheckSmsForm struct {
-	Phone string `json:"phone" binding:"required"`
-	Code string `json:"code" binding:"required"`
+	Phone    string `json:"phone" binding:"required"`
+	Code     string `json:"code" binding:"required"`
 	Platform string `json:"platform" binding:"required"`
 }
+
 func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	var form CheckSmsForm
 	err := c.BindJSON(&form)
@@ -484,7 +680,6 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	uwr, err := userandrole.GetUserRoles(db, user.Id)
 	middleware.StopExec(err)
 
-
 	// 保存登录信息
 	lh := &ophistory.LoginHistory{
 		Id:        util.GenerateDataId(),
@@ -499,12 +694,12 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	_ = ophistory.SaveLoginHistory(db, lh)
 
 	retData := gin.H{
-		"token": token,
-		"user": user,
-		"roles": uwr.Roles,
+		"token":        token,
+		"user":         user,
+		"roles":        uwr.Roles,
 		"childrenRole": uwr.ChildrenRole,
-		"menus": uwr.Menus,
-		"buttons": uwr.Buttons,
+		"menus":        uwr.Menus,
+		"buttons":      uwr.Buttons,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
@@ -517,8 +712,8 @@ func MeHandler(c *gin.Context, uo *UserOption) {
 	childrenRoles := userandrole.UnWrapChildrenRole(roles)
 
 	retData := gin.H{
-		"user": user,
-		"roles": roles,
+		"user":         user,
+		"roles":        roles,
 		"childrenRole": childrenRoles,
 	}
 
@@ -542,10 +737,11 @@ func LogoutHandler(c *gin.Context, uo *UserOption) {
 
 // 管理员创建 phone 账户
 type CreateLoginPhoneForm struct {
-	Phone string `json:"phone" binding:"required"`
-	Avatar string `json:"avatar"`
+	Phone   string   `json:"phone" binding:"required"`
+	Avatar  string   `json:"avatar"`
 	RoleIds []string `json:"roleIds"` // 角色列表，非必输，此处选择的角色只能是当前用户的自身或下属角色，api 管理员不受此规则的控制
 }
+
 func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 	var form CreateLoginPhoneForm
 	err := c.BindJSON(&form)
@@ -605,8 +801,9 @@ func CreateLoginPhoneHandler(c *gin.Context, uo *UserOption) {
 // 调用者获取到成功响应后，就应该重新拉去登录，因为之前的信息会被删除
 type WeChatBindPhoneForm struct {
 	Phone string `json:"phone" binding:"required"`
-	Code string `json:"code" binding:"required"`
+	Code  string `json:"code" binding:"required"`
 }
+
 func WeChatBindPhoneHandler(c *gin.Context, uo *UserOption) {
 	var form WeChatBindPhoneForm
 	err := c.BindJSON(&form)
@@ -673,7 +870,7 @@ func WeChatBindPhoneHandler(c *gin.Context, uo *UserOption) {
 		userId := phoneUser.Id
 		updateA := bson.M{
 			"$set": bson.M{
-				"userId": userId,
+				"userId":  userId,
 				"updateT": util.GetCurTime(),
 			},
 		}
@@ -689,11 +886,11 @@ func WeChatBindPhoneHandler(c *gin.Context, uo *UserOption) {
 
 		updateB := bson.M{
 			"$set": bson.M{
-				"referId": phoneUser.Id,
-				"ban": true,
-				"banT": math.MaxInt64,
+				"referId":   phoneUser.Id,
+				"ban":       true,
+				"banT":      math.MaxInt64,
 				"banReason": userapp.CombineAccountBanReason,
-				"updateT": util.GetCurTime(),
+				"updateT":   util.GetCurTime(),
 			},
 			"$push": bson.M{
 				"history": opHis,
@@ -726,19 +923,20 @@ func WeChatBindPhoneHandler(c *gin.Context, uo *UserOption) {
 type TokenCheckForm struct {
 	Token string `json:"token" binding:"required"`
 }
+
 func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 	var form TokenCheckForm
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)
 
 	type Ret struct {
-		Valid bool `json:"valid"`
-		Reason string `json:"reason"`
-		User *userapp.User `json:"user"`
-		Roles []*roleapp.Role `json:"roles"`
+		Valid        bool                 `json:"valid"`
+		Reason       string               `json:"reason"`
+		User         *userapp.User        `json:"user"`
+		Roles        []*roleapp.Role      `json:"roles"`
 		ChildrenRole []*roleapp.ChildRole `json:"childrenRole"`
-		Menus []string `json:"menus"`
-		Buttons []string `json:"buttons"`
+		Menus        []string             `json:"menus"`
+		Buttons      []string             `json:"buttons"`
 	}
 
 	retData := &Ret{}
@@ -777,8 +975,9 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 type BanForm struct {
 	UserId string `json:"userId" binding:"required"`
 	Reason string `json:"reason"`
-	T int64 `json:"t"` // 截至时间
+	T      int64  `json:"t"` // 截至时间
 }
+
 func BanUserHandler(c *gin.Context, uo *UserOption) {
 	var form BanForm
 	err := c.BindJSON(&form)
@@ -806,7 +1005,7 @@ func BanUserHandler(c *gin.Context, uo *UserOption) {
 		return
 	}
 
-	t := time.Now().Unix() + 365 * 24 * 60 * 60
+	t := time.Now().Unix() + 365*24*60*60
 	if form.T > 0 && form.T > time.Now().Unix() {
 		t = form.T
 	}
@@ -817,10 +1016,10 @@ func BanUserHandler(c *gin.Context, uo *UserOption) {
 
 	update := bson.M{
 		"$set": bson.M{
-			"ban": true,
+			"ban":       true,
 			"banReason": form.Reason,
-			"banT": t,
-			"updateT": util.GetCurTime(),
+			"banT":      t,
+			"updateT":   util.GetCurTime(),
 		},
 		"$push": bson.M{
 			"history": opHis,
@@ -838,6 +1037,7 @@ type UnBanForm struct {
 	UserId string `json:"userId" binding:"required"`
 	Reason string `json:"reason"`
 }
+
 func UnBanUserHandler(c *gin.Context, uo *UserOption) {
 	var form UnBanForm
 	err := c.BindJSON(&form)
@@ -865,10 +1065,10 @@ func UnBanUserHandler(c *gin.Context, uo *UserOption) {
 
 	update := bson.M{
 		"$set": bson.M{
-			"ban": false,
+			"ban":       false,
 			"banReason": form.Reason,
-			"banT": 0,
-			"updateT": util.GetCurTime(),
+			"banT":      0,
+			"updateT":   util.GetCurTime(),
 		},
 		"$push": bson.M{
 			"history": opHis,
@@ -885,6 +1085,7 @@ func UnBanUserHandler(c *gin.Context, uo *UserOption) {
 type ResetPasswdForm struct {
 	UserId string `json:"userId" binding:"required"`
 }
+
 func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 	var form ResetPasswdForm
 	err := c.BindJSON(&form)
@@ -916,9 +1117,9 @@ func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 	}
 	update := bson.M{
 		"$set": bson.M{
-			"salt": salt,
-			"passwd": hashP,
-			"init": true, // 这里要求重新登录修改密码
+			"salt":    salt,
+			"passwd":  hashP,
+			"init":    true, // 这里要求重新登录修改密码
 			"updateT": util.GetCurTime(),
 		},
 	}
@@ -974,9 +1175,9 @@ func GetUserInfoHandler(c *gin.Context, uo *UserOption) {
 	middleware.StopExec(err)
 
 	retData := gin.H{
-		"user": user,
-		"roles": uwr.Roles,
-		"menus": uwr.Menus,
+		"user":    user,
+		"roles":   uwr.Roles,
+		"menus":   uwr.Menus,
 		"buttons": uwr.Buttons,
 	}
 	returnfun.ReturnOKJson(c, retData)
@@ -1062,9 +1263,9 @@ func QueryUserHandler(c *gin.Context, uo *UserOption) {
 
 	retData := gin.H{
 		"total": total,
-		"page": page,
-		"size": size,
-		"data": users,
+		"page":  page,
+		"size":  size,
+		"data":  users,
 	}
 
 	returnfun.ReturnOKJson(c, retData)

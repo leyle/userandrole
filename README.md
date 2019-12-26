@@ -16,12 +16,13 @@ setHeader("token", "someValue")
 
 #### platform 可选值
 
-| 值      | 意义           |
-| ------- | -------------- |
-| H5      | 手机浏览器登录 |
-| PC      | 电脑浏览器登录 |
-| ANDROID | 安卓手机       |
-| IOS     | 苹果手机       |
+| 值          | 意义           |
+| ----------- | -------------- |
+| H5          | 手机浏览器登录 |
+| PC          | 电脑浏览器登录 |
+| ANDROID     | 安卓手机       |
+| IOS         | 苹果手机       |
+| XIAOCHENGXU | 微信小程序     |
 
 ---
 
@@ -207,7 +208,7 @@ setHeader("token", "someValue")
 
 ```json
 // GET /api/user/wx/appid?platform=H5
-// platform 可选值 H5 / APP
+// platform 可选值 H5 / APP / XIAOCHENGXU
 ```
 
 ---
@@ -232,10 +233,45 @@ setHeader("token", "someValue")
 
 ```json
 // POST /api/user/wx/login
-// platform 可选值 H5 - 网页拉起微信授权 / APP - app 微信授权方式
+// platform 可选值 H5 - 网页拉起微信授权 / APP - app 微信授权方式 //  XIAOCHENGXU - 微信小程序
 {
   "code": "wechat code....",
   "platform": "H5"
+}
+```
+
+---
+
+#### 小程序登录
+
+```json
+// 小程序登录分为两个步骤
+// 1. 调用小程序登录接口，根据调用情况有三种情况
+// 1.1 全新用户，需要进一步传递 profile 信息才能使用
+// 1.2 用户存在，但是没有更新 profile信息，需要更新才能使用
+// 2.3 用户存在，profile 信息完整，可以使用
+
+// 根据 code 换取登录
+// POST /api/user/wx/xcxlogin
+{
+  "code": "xxxx"
+}
+
+// 调用成功结果为 http status code，需要根据 body 中的 code 判断是否传递 profile 信息
+// 1. body 中的 code 为 2000，需要进一步传递 profile 信息，见下面描述的接口
+// 2. body 中的 code 为 200，登录成功
+
+
+// 传递 profile 信息
+// 调用本接口，需要在 header 设置 token，token 从上一步获取
+// POST /api/user/wx/xcxprofile
+{
+  "nickname": "xxx",
+  "sex": 0,
+  "avatar": "https://xxxx",
+  "city": "xxx",
+  "province": "xxx",
+  "country": "xxxx"
 }
 ```
 

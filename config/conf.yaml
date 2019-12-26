@@ -20,6 +20,9 @@ wechat:
   app:
     appid: "wxdc1684c9e82c42b4"
     secret: ""
+  xiaochengxu:
+    appid: "wxdc1684c9e82c42b4"
+    secret: ""
   web:
     appid: "wx233ca74b3d313293"
     secret: ""

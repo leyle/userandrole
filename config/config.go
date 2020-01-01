@@ -8,7 +8,11 @@ import (
 
 type Config struct {
 	Debug bool `yaml:"debug"`
+
+	UriPrefix string `yaml:"uriprefix"`
+
 	Server *ServerConf `yaml:"server"`
+
 	Mongodb *MongodbConf `yaml:"mongodb"`
 	Redis *RedisConf `yaml:"redis"`
 

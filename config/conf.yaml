@@ -1,4 +1,9 @@
 debug: true
+
+# 目的是兼容旧有代码
+# 新的项目中，不应该打这个补丁
+uriprefix: "/sso"
+
 server:
   host: "0.0.0.0"
   port: "9300"

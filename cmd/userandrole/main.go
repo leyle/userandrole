@@ -98,7 +98,13 @@ func main() {
 	ginbaseutil.MAX_ONE_PAGE_SIZE = 10000
 
 	r := middleware.SetupGin()
-	apiRouter := r.Group("/api")
+
+	uriPrefix := "/api"
+	if conf.UriPrefix != "" {
+		uriPrefix = uriPrefix + conf.UriPrefix
+	}
+
+	apiRouter := r.Group(uriPrefix)
 
 	// 权限接口
 	api.RoleRouter(ds, apiRouter.Group(""))
@@ -136,10 +142,10 @@ func main() {
 		PhoneOpt: smsOpt,
 	}
 
-	middleware.AddIgnoreReadReqBodyPath("/api/user/idpasswd/login",
-												"/api/user/idpasswd/resetpasswd",
-												"/api/user/idpasswd/changepasswd",
-												"/api/user/idpasswd")
+	middleware.AddIgnoreReadReqBodyPath(uriPrefix + "/user/idpasswd/login",
+												uriPrefix + "/user/idpasswd/resetpasswd",
+												uriPrefix + "/user/idpasswd/changepasswd",
+												uriPrefix + "/user/idpasswd")
 	api.UserRouter(userOption, apiRouter.Group(""))
 
 	// 用户与权限映射关系的接口
@@ -151,8 +157,8 @@ func main() {
 	api.SystemConfRouter(conf, apiRouter.Group(""))
 
 	// api 文档渲染
-	middleware.AddIgnoreReadReqBodyPath("/api/doc")
-	r.StaticFile("/api/doc", "./doc.html")
+	middleware.AddIgnoreReadReqBodyPath(uriPrefix + "/doc")
+	r.StaticFile(uriPrefix + "/doc", "./doc.html")
 
 	addr := conf.Server.GetServerAddr()
 	err = r.Run(addr)

@@ -164,6 +164,9 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 		userR.GET("/logout", func(c *gin.Context) {
 			LogoutHandler(c, uo)
 		})
+		userR.POST("/logout", func(c *gin.Context) {
+			LogoutHandler(c, uo)
+		})
 
 		// 管理员创建一个手机号登录账户
 		userR.POST("/phone", func(c *gin.Context) {

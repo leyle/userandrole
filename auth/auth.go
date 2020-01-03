@@ -138,6 +138,9 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 	ar.ChildrenRole = uwr.ChildrenRole
 	ar.Result = AuthResultOK
 
+	// 过滤掉默认角色
+	ar.Roles = roleapp.RemoveDefaultRole(ar.Roles)
+
 	return ar
 }
 
@@ -243,4 +246,5 @@ func hasPermission(items []*roleapp.Item, method, path, resource string) bool {
 
 	return false
 }
+
 

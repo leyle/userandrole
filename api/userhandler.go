@@ -313,7 +313,7 @@ func LoginByIdPasswdHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token":        token,
 		"user":         dbuser,
-		"roles":        uwr.Roles,
+		"roles":        roleapp.RemoveDefaultRole(uwr.Roles),
 		"childrenRole": uwr.ChildrenRole,
 		"menus":        uwr.Menus,
 		"buttons":      uwr.Buttons,
@@ -421,7 +421,7 @@ func LoginByWeChatHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token":        token,
 		"user":         user,
-		"roles":        uwr.Roles,
+		"roles":        roleapp.RemoveDefaultRole(uwr.Roles),
 		"childrenRole": uwr.ChildrenRole,
 		"menus":        uwr.Menus,
 		"buttons":      uwr.Buttons,
@@ -606,7 +606,7 @@ func FullXiaoChengXuProfileHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token":        token,
 		"user":         user,
-		"roles":        uwr.Roles,
+		"roles":        roleapp.RemoveDefaultRole(uwr.Roles),
 		"childrenRole": uwr.ChildrenRole,
 		"menus":        uwr.Menus,
 		"buttons":      uwr.Buttons,
@@ -696,7 +696,7 @@ func CheckSmsHandler(c *gin.Context, uo *UserOption) {
 	retData := gin.H{
 		"token":        token,
 		"user":         user,
-		"roles":        uwr.Roles,
+		"roles":        roleapp.RemoveDefaultRole(uwr.Roles),
 		"childrenRole": uwr.ChildrenRole,
 		"menus":        uwr.Menus,
 		"buttons":      uwr.Buttons,
@@ -962,7 +962,7 @@ func TokenCheckHandler(c *gin.Context, uo *UserOption) {
 
 	retData.Valid = true
 	retData.User = tVal.User
-	retData.Roles = uwr.Roles
+	retData.Roles = roleapp.RemoveDefaultRole(uwr.Roles)
 	retData.ChildrenRole = uwr.ChildrenRole
 	retData.Menus = uwr.Menus
 	retData.Buttons = uwr.Buttons

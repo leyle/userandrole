@@ -357,3 +357,13 @@ func inArray(id string, targets []string) bool {
 
 	return false
 }
+
+func RemoveDefaultRole(roles []*Role) []*Role {
+	var targets []*Role
+	for _, role := range roles {
+		if role.Id != DefaultRoleId {
+			targets = append(targets, role)
+		}
+	}
+	return targets
+}

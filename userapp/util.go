@@ -97,6 +97,8 @@ func SaveToken(r *redis.Client, token string, user *User) error {
 }
 
 // 删除token
+// 后续考虑扩展，支持多个 logintype
+// 当 logintype 为 * 时，传递所有的 logintype
 func DeleteToken(r *redis.Client, userId, loginType string) error {
 	key := generateTokenKey(userId, loginType)
 	_, err := r.Del(key).Result()

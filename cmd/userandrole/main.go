@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"github.com/leyle/ginbase/dbandmq"
 	"github.com/leyle/ginbase/middleware"
 	"github.com/leyle/smsapp"
@@ -16,16 +17,21 @@ import (
 	"github.com/leyle/userandrole/userapp"
 	"github.com/leyle/userandrole/util"
 	ginbaseutil "github.com/leyle/ginbase/util"
+	"gopkg.in/mgo.v2/bson"
 	"os"
 )
 
 func main() {
 	var err error
 	var port string
+	var reset string
 	var cfile string
 
 	flag.StringVar(&port, "p", "", "-p 9300")
 	flag.StringVar(&cfile, "c", "", "-c /path/to/config/file")
+
+	// 注意，这里在 cli 中直接输入密码的方式不安全，bash 历史记录中会看到这些数据
+	flag.StringVar(&reset, "r", "", "-s new admin passwd")
 	flag.Parse()
 	if cfile == "" {
 		fmt.Println("缺少运行的配置文件")
@@ -54,6 +60,17 @@ func main() {
 
 	ds := dbandmq.NewDs(conf.Mongodb.Host, conf.Mongodb.Port, conf.Mongodb.User, conf.Mongodb.Passwd, conf.Mongodb.Database)
 	defer ds.Close()
+
+	// 检查是否需要重置密码
+	if reset != "" {
+		err = resetAdminPasswd(ds, rClient, reset)
+		if err != nil {
+			return
+		} else {
+			fmt.Println("重置 admin 密码成功")
+			return
+		}
+	}
 
 	// 创建 indexkey
 	addIndexkey()
@@ -186,3 +203,32 @@ func addIndexkey() {
 	dbandmq.AddIndexKey(ophistory.IKLoginHistory)
 }
 
+// 重置密码，还要求删除已经生效的 token
+func resetAdminPasswd(ds *dbandmq.Ds, redisC *redis.Client, passwd string) error {
+	salt := ginbaseutil.GenerateDataId()
+	p := passwd + salt
+	hashP := ginbaseutil.Sha256(p)
+
+	update := bson.M{
+		"$set": bson.M{
+			"salt": salt,
+			"passwd": hashP,
+			"updateT": ginbaseutil.GetCurTime(),
+		},
+	}
+
+	filter := bson.M{
+		"loginId": userapp.AdminLoginId,
+	}
+
+	err := ds.C(userapp.CollectionNameIdPasswd).Update(filter, update)
+	if err != nil {
+		fmt.Println("重置 admin 密码失败", err.Error())
+		return err
+	}
+
+	// 清理掉可能的 token
+	// todo
+
+	return nil
+}

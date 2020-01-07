@@ -101,8 +101,13 @@ func main() {
 	}
 	api.AuthOption = authOption
 
+	uriPrefix := "/api"
+	if conf.UriPrefix != "" {
+		uriPrefix = uriPrefix + conf.UriPrefix
+	}
+
 	// 初始化数据库中记录的 role item 等信息
-	err = util.RbacHelper(ds)
+	err = util.RbacHelper(ds, uriPrefix)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -115,12 +120,6 @@ func main() {
 	ginbaseutil.MAX_ONE_PAGE_SIZE = 10000
 
 	r := middleware.SetupGin()
-
-	uriPrefix := "/api"
-	if conf.UriPrefix != "" {
-		uriPrefix = uriPrefix + conf.UriPrefix
-	}
-
 	apiRouter := r.Group(uriPrefix)
 
 	// 权限接口

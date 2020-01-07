@@ -39,6 +39,17 @@ func GetMongodbAndRedisConfHandler(c *gin.Context, conf *config.Config) {
 // 导出用户自定义 api
 // 包含 item / permission / role 三部分数据
 func ExportUserApiHandler(c *gin.Context, ds *dbandmq.Ds) {
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser.IdPasswd.LoginId != userapp.AdminLoginId {
+		returnfun.Return401Json(c, "不允许读取配置")
+		return
+	}
+
+	if curUser == nil {
+		returnfun.ReturnErrJson(c, "读取用户信息失败")
+		return
+	}
+
 	db := ds.CopyDs()
 	defer db.Close()
 
@@ -73,6 +84,17 @@ func ExportUserApiHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 // 导出用户自定义的 api
 func ImportUserApiHandler(c *gin.Context, ds *dbandmq.Ds) {
+	curUser, _ := GetCurUserAndRole(c)
+	if curUser.IdPasswd.LoginId != userapp.AdminLoginId {
+		returnfun.Return401Json(c, "不允许做此操作")
+		return
+	}
+
+	if curUser == nil {
+		returnfun.ReturnErrJson(c, "读取用户信息失败")
+		return
+	}
+
 	var form migrate.Migrate
 	err := c.BindJSON(&form)
 	middleware.StopExec(err)

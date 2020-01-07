@@ -10,7 +10,7 @@ import (
 )
 
 // 初始化所有的 api item 到数据库中
-func RbacHelper(db *dbandmq.Ds) error {
+func RbacHelper(db *dbandmq.Ds, uriPrefix string) error {
 	var err error
 	t := util.GetCurTime()
 
@@ -23,31 +23,31 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "用户修改自己的账户密码",
 			Method: "POST",
-			Path:   "/api/user/idpasswd/changepasswd",
+			Path:   uriPrefix + "/user/idpasswd/changepasswd",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "微信绑定手机号",
 			Method: "POST",
-			Path:   "/api/user/wx/bindphone",
+			Path:   uriPrefix + "/user/wx/bindphone",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "用户读取自身信息",
 			Method: "GET",
-			Path:   "/api/user/me",
+			Path:   uriPrefix + "/user/me",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "退出登录",
 			Method: "GET",
-			Path:   "/api/user/logout",
+			Path:   uriPrefix + "/user/logout",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "POST-退出登录",
 			Method: "POST",
-			Path:   "/api/user/logout",
+			Path:   uriPrefix + "/user/logout",
 		},
 	}
 
@@ -60,31 +60,31 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "新建item",
 			Method: "POST",
-			Path:   "/api/role/item",
+			Path:   uriPrefix + "/role/item",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "修改item",
 			Method: "PUT",
-			Path:   "/api/role/item/*",
+			Path:   uriPrefix + "/role/item/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "删除item",
 			Method: "DELETE",
-			Path:   "/api/role/item/*",
+			Path:   uriPrefix + "/role/item/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "读取item明细",
 			Method: "GET",
-			Path:   "/api/role/item/*",
+			Path:   uriPrefix + "/role/item/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "搜索item",
 			Method: "GET",
-			Path:   "/api/role/items",
+			Path:   uriPrefix + "/role/items",
 		},
 
 		//////////////////////////////////// permission
@@ -92,43 +92,43 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "新建permission",
 			Method: "POST",
-			Path:   "/api/role/permission",
+			Path:   uriPrefix + "/role/permission",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "给permission添加items",
 			Method: "POST",
-			Path:   "/api/role/permission/*/additems",
+			Path:   uriPrefix + "/role/permission/*/additems",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "取消permission某些items",
 			Method: "POST",
-			Path:   "/api/role/permission/*/delitems",
+			Path:   uriPrefix + "/role/permission/*/delitems",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "修改permission基本信息",
 			Method: "PUT",
-			Path:   "/api/role/permission/*",
+			Path:   uriPrefix + "/role/permission/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "删除permission",
 			Method: "DELETE",
-			Path:   "/api/role/permission/*",
+			Path:   uriPrefix + "/role/permission/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "读取permission信息",
 			Method: "GET",
-			Path:   "/api/role/permission/*",
+			Path:   uriPrefix + "/role/permission/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "搜索permission",
 			Method: "GET",
-			Path:   "/api/role/permissions",
+			Path:   uriPrefix + "/role/permissions",
 		},
 
 		///////////////////////////////
@@ -136,55 +136,55 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "新建role",
 			Method: "POST",
-			Path:   "/api/role/role",
+			Path:   uriPrefix + "/role/role",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "给role添加权限",
 			Method: "POST",
-			Path:   "/api/role/role/*/addps",
+			Path:   uriPrefix + "/role/role/*/addps",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "取消role某些权限",
 			Method: "POST",
-			Path:   "/api/role/role/*/delps",
+			Path:   uriPrefix + "/role/role/*/delps",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "修改role基本信息",
 			Method: "PUT",
-			Path:   "/api/role/role/*",
+			Path:   uriPrefix + "/role/role/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "删除role",
 			Method: "DELETE",
-			Path:   "/api/role/role/*",
+			Path:   uriPrefix + "/role/role/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "给role添加childrole",
 			Method: "POST",
-			Path:   "/api/role/role/*/addchildrole",
+			Path:   uriPrefix + "/role/role/*/addchildrole",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "删除role某些childrole",
 			Method: "POST",
-			Path:   "/api/role/role/*/delchildrole",
+			Path:   uriPrefix + "/role/role/*/delchildrole",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "查看role信息",
 			Method: "GET",
-			Path:   "/api/role/role/*",
+			Path:   uriPrefix + "/role/role/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "搜索role",
 			Method: "GET",
-			Path:   "/api/role/roles",
+			Path:   uriPrefix + "/role/roles",
 		},
 
 		/////////////////////////////////////
@@ -192,49 +192,49 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "替用户创建账户密码",
 			Method: "POST",
-			Path:   "/api/user/idpasswd",
+			Path:   uriPrefix + "/user/idpasswd",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "替用户创建手机号登录账户",
 			Method: "POST",
-			Path:   "/api/user/phone",
+			Path:   uriPrefix + "/user/phone",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "封禁用户",
 			Method: "POST",
-			Path:   "/api/user/ban",
+			Path:   uriPrefix + "/user/ban",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "解禁用户",
 			Method: "POST",
-			Path:   "/api/user/unban",
+			Path:   uriPrefix + "/user/unban",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "替用户重置密码",
 			Method: "POST",
-			Path:   "/api/user/idpasswd/resetpasswd",
+			Path:   uriPrefix + "/user/idpasswd/resetpasswd",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "读取指定id的用户信息",
 			Method: "GET",
-			Path:   "/api/user/user/*",
+			Path:   uriPrefix + "/user/user/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "查看指定id用户登录历史",
 			Method: "GET",
-			Path:   "/api/user/loginhistory/*",
+			Path:   uriPrefix + "/user/loginhistory/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "搜索用户列表",
 			Method: "GET",
-			Path:   "/api/user/users",
+			Path:   uriPrefix + "/user/users",
 		},
 
 		///////////////////////////////////////////
@@ -242,25 +242,25 @@ func RbacHelper(db *dbandmq.Ds) error {
 			Id:     util.GenerateDataId(),
 			Name:   "给用户添加角色",
 			Method: "POST",
-			Path:   "/api/uwr/addroles",
+			Path:   uriPrefix + "/uwr/addroles",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "取消用户角色",
 			Method: "POST",
-			Path:   "/api/uwr/delroles",
+			Path:   uriPrefix + "/uwr/delroles",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "读取指定id用户的roles信息",
 			Method: "GET",
-			Path:   "/api/uwr/user/*",
+			Path:   uriPrefix + "/uwr/user/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
 			Name:   "搜索已授权用户列表",
 			Method: "GET",
-			Path:   "/api/uwr/users",
+			Path:   uriPrefix + "/uwr/users",
 		},
 	}
 	for _, tmp := range roleItems {

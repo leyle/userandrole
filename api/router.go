@@ -294,10 +294,12 @@ func SystemConfRouter(ds *dbandmq.Ds, conf *config.Config, g *gin.RouterGroup) {
 		})
 
 		// 导出用户输入的 api 地址
-		g.Group("/sys").GET("/export", func(c *gin.Context) {
+		sysR.GET("/export", func(c *gin.Context) {
 			ExportUserApiHandler(c, ds)
 		})
-		g.Group("/sys").POST("/import", func(c *gin.Context) {
+
+		// 导入用户输入的 api 信息
+		sysR.POST("/import", func(c *gin.Context) {
 			ImportUserApiHandler(c, ds)
 		})
 	}

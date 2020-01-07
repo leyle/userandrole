@@ -85,10 +85,10 @@ type Item struct {
 }
 
 // permission
-const CollectionPermissionName = "permission"
+const CollectionNamePermission = "permission"
 
 var IKPermission = &dbandmq.IndexKey{
-	Collection: CollectionPermissionName,
+	Collection: CollectionNamePermission,
 	SingleKey:  []string{"name", "itemIds", "deleted"},
 	UniqueKey:  []string{"name"},
 }
@@ -221,7 +221,7 @@ func GetPermissionByName(db *dbandmq.Ds, name string, more bool) (*Permission, e
 	}
 
 	var p *Permission
-	err := db.C(CollectionPermissionName).Find(f).One(&p)
+	err := db.C(CollectionNamePermission).Find(f).One(&p)
 	if err != nil && err != mgo.ErrNotFound {
 		Logger.Errorf("", "根据permission name[%s]读取permission信息失败, %s", name, err.Error())
 		return nil, err
@@ -243,7 +243,7 @@ func GetPermissionByName(db *dbandmq.Ds, name string, more bool) (*Permission, e
 
 func GetPermissionById(db *dbandmq.Ds, id string, more bool) (*Permission, error) {
 	var p *Permission
-	err := db.C(CollectionPermissionName).FindId(id).One(&p)
+	err := db.C(CollectionNamePermission).FindId(id).One(&p)
 	if err != nil && err != mgo.ErrNotFound {
 		Logger.Errorf("", "根据 permission id[%s]读取permission信息失败, %s", id, err.Error())
 		return nil, err
@@ -265,11 +265,11 @@ func GetPermissionById(db *dbandmq.Ds, id string, more bool) (*Permission, error
 
 // 存储 permission
 func SavePermission(db *dbandmq.Ds, p *Permission) error {
-	return db.C(CollectionPermissionName).Insert(p)
+	return db.C(CollectionNamePermission).Insert(p)
 }
 
 func UpdatePermission(db *dbandmq.Ds, p *Permission) error {
-	return db.C(CollectionPermissionName).UpdateId(p.Id, p)
+	return db.C(CollectionNamePermission).UpdateId(p.Id, p)
 }
 
 // 根据 name 读取 role
@@ -327,4 +327,35 @@ func SaveRole(db *dbandmq.Ds, role *Role) error {
 
 func UpdateRole(db *dbandmq.Ds, role *Role) error {
 	return db.C(CollectionNameRole).UpdateId(role.Id, role)
+}
+
+func GetFilterItems(db *dbandmq.Ds, filter *bson.M) ([]*Item, error) {
+	var items []*Item
+	err := db.C(CollectionNameItem).Find(filter).All(&items)
+	if err != nil {
+		Logger.Errorf("", "查询筛选的 items 失败, %s", err.Error())
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func GetFilterPermissions(db *dbandmq.Ds, filter *bson.M) ([]*Permission, error) {
+	var ps []*Permission
+	err := db.C(CollectionNamePermission).Find(filter).All(&ps)
+	if err != nil {
+		Logger.Errorf("", "查询筛选的 permissions 失败, %s", err.Error())
+		return nil, err
+	}
+	return ps, nil
+}
+
+func GetFilterRoles(db *dbandmq.Ds, filter *bson.M) ([]*Role, error) {
+	var roles []*Role
+	err := db.C(CollectionNameRole).Find(filter).All(&roles)
+	if err != nil {
+		Logger.Errorf("", "查询筛选 roles 失败, %s", err.Error())
+		return nil, err
+	}
+	return roles, nil
 }

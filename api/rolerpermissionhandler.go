@@ -211,7 +211,7 @@ func UpdatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 		},
 	}
 
-	err = db.C(roleapp.CollectionPermissionName).UpdateId(id, update)
+	err = db.C(roleapp.CollectionNamePermission).UpdateId(id, update)
 	middleware.StopExec(err)
 
 	returnfun.ReturnOKJson(c, "")
@@ -244,7 +244,7 @@ func DeletePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	db := ds.CopyDs()
 	defer db.Close()
 
-	err := db.C(roleapp.CollectionPermissionName).UpdateId(id, update)
+	err := db.C(roleapp.CollectionNamePermission).UpdateId(id, update)
 	middleware.StopExec(err)
 
 	returnfun.ReturnOKJson(c, "")
@@ -306,7 +306,7 @@ func QueryPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	db := ds.CopyDs()
 	defer db.Close()
 
-	Q := db.C(roleapp.CollectionPermissionName).Find(query)
+	Q := db.C(roleapp.CollectionNamePermission).Find(query)
 	total, err := Q.Count()
 	middleware.StopExec(err)
 

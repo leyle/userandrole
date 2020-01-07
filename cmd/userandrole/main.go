@@ -171,7 +171,7 @@ func main() {
 	// 系统配置的接口
 	// 过滤掉本接口返回的数据
 	middleware.AddIgnoreReadReqBodyPath("/api/sys/conf")
-	api.SystemConfRouter(conf, apiRouter.Group(""))
+	api.SystemConfRouter(ds, conf, apiRouter.Group(""))
 
 	// api 文档渲染
 	middleware.AddIgnoreReadReqBodyPath(uriPrefix + "/doc")

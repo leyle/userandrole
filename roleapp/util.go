@@ -81,7 +81,7 @@ func GetPermissionsByPermissionIds(db *dbandmq.Ds, pids []string) ([]*Permission
 	}
 
 	var ps []*Permission
-	err := db.C(CollectionPermissionName).Find(f).All(&ps)
+	err := db.C(CollectionNamePermission).Find(f).All(&ps)
 	if err != nil {
 		Logger.Errorf("", "根据permissionIds读取permission信息失败, %s", err.Error())
 		return nil, err

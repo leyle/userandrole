@@ -283,7 +283,7 @@ func UserWithRoleRouter(db *dbandmq.Ds, g *gin.RouterGroup) {
 }
 
 // 系统配置
-func SystemConfRouter(conf *config.Config, g *gin.RouterGroup) {
+func SystemConfRouter(ds *dbandmq.Ds, conf *config.Config, g *gin.RouterGroup) {
 	sysR := g.Group("/sys", func(c *gin.Context) {
 		Auth(c)
 	})
@@ -291,6 +291,14 @@ func SystemConfRouter(conf *config.Config, g *gin.RouterGroup) {
 		// 读取 redis 和 mongodb 配置
 		sysR.GET("/conf", func(c *gin.Context) {
 			GetMongodbAndRedisConfHandler(c, conf)
+		})
+
+		// 导出用户输入的 api 地址
+		g.Group("/sys").GET("/export", func(c *gin.Context) {
+			ExportUserApiHandler(c, ds)
+		})
+		g.Group("/sys").POST("/import", func(c *gin.Context) {
+			ImportUserApiHandler(c, ds)
 		})
 	}
 }

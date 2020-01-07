@@ -190,7 +190,6 @@ func InsuranceAdminRole(db *dbandmq.Ds) (*Role, error) {
 
 	Logger.Infof("", "启动roleapp，初始化adminrole成功，roleId[%s]", role.Id)
 
-
 	// 确保 admin 信息不可修改
 	err = LoadCanNotModifyIds(db)
 	if err != nil {
@@ -216,6 +215,7 @@ func addAdminItem(db *dbandmq.Ds, itemName string) (*Item, error) {
 			Resource: "*",
 			Menu:     "*",
 			Button:   "*",
+			DataFrom: DataFromSystem,
 			Deleted:  false,
 			History:  nil,
 			CreateT:  util.GetCurTime(),
@@ -225,6 +225,11 @@ func addAdminItem(db *dbandmq.Ds, itemName string) (*Item, error) {
 		err = SaveItem(db, item)
 		if err != nil {
 			return nil, err
+		}
+	} else {
+		if item.DataFrom == "" {
+			item.DataFrom = DataFromSystem
+			_ = UpdateItem(db, item)
 		}
 	}
 
@@ -238,18 +243,24 @@ func addAdminPermission(db *dbandmq.Ds, itemIds []string) (*Permission, error) {
 	}
 	if permission == nil {
 		permission = &Permission{
-			Id:      util.GenerateDataId(),
-			Name: AdminPermissionName,
-			ItemIds: itemIds,
-			Menu:    "*",
-			Button:  "*",
-			Deleted: false,
-			CreateT: util.GetCurTime(),
+			Id:       util.GenerateDataId(),
+			Name:     AdminPermissionName,
+			ItemIds:  itemIds,
+			Menu:     "*",
+			Button:   "*",
+			DataFrom: DataFromSystem,
+			Deleted:  false,
+			CreateT:  util.GetCurTime(),
 		}
 		permission.UpdateT = permission.CreateT
 		err = SavePermission(db, permission)
 		if err != nil {
 			return nil, err
+		}
+	} else {
+		if permission.DataFrom == "" {
+			permission.DataFrom = DataFromSystem
+			_ = UpdatePermission(db, permission)
 		}
 	}
 
@@ -269,6 +280,7 @@ func addAdminRole(db *dbandmq.Ds, pids []string) (*Role, error) {
 			PermissionIds: pids,
 			Menu:          "*",
 			Button:        "*",
+			DataFrom:      DataFromSystem,
 			Deleted:       false,
 			CreateT:       util.GetCurTime(),
 		}
@@ -276,6 +288,11 @@ func addAdminRole(db *dbandmq.Ds, pids []string) (*Role, error) {
 		err = SaveRole(db, role)
 		if err != nil {
 			return nil, err
+		}
+	} else {
+		if role.DataFrom == "" {
+			role.DataFrom = DataFromSystem
+			_ = UpdateRole(db, role)
 		}
 	}
 
@@ -292,10 +309,11 @@ func InsuranceDefaultRole(db *dbandmq.Ds) (*Role, error) {
 
 	if role == nil {
 		role = &Role{
-			Id:            util.GenerateDataId(),
-			Name:          DefaultRoleName,
-			Deleted:       false,
-			CreateT:       util.GetCurTime(),
+			Id:       util.GenerateDataId(),
+			Name:     DefaultRoleName,
+			DataFrom: DataFromSystem,
+			Deleted:  false,
+			CreateT:  util.GetCurTime(),
 		}
 		role.UpdateT = role.CreateT
 		err = SaveRole(db, role)

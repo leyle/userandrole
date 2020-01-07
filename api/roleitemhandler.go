@@ -18,12 +18,12 @@ import (
 
 // 新建 item
 type CreateItemForm struct {
-	Name string `json:"name" binding:"required"`
-	Method string `json:"method" binding:"required"`
-	Path string `json:"path" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	Method   string `json:"method" binding:"required"`
+	Path     string `json:"path" binding:"required"`
 	Resource string `json:"resource"` // 可为空
-	Menu string `json:"menu"`
-	Button string `json:"button"`
+	Menu     string `json:"menu"`
+	Button   string `json:"button"`
 }
 
 func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
@@ -57,6 +57,7 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 		Resource: form.Resource,
 		Menu:     form.Menu,
 		Button:   form.Button,
+		DataFrom: roleapp.DataFromUser,
 		Deleted:  false,
 		CreateT:  util.GetCurTime(),
 	}
@@ -82,13 +83,14 @@ func CreateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 // 修改item
 type UpdateItemForm struct {
-	Name string `json:"name" binding:"required"`
-	Method string `json:"method" binding:"required"`
-	Path string `json:"path" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	Method   string `json:"method" binding:"required"`
+	Path     string `json:"path" binding:"required"`
 	Resource string `json:"resource"` // 可为空
-	Menu string `json:"menu"`
-	Button string `json:"button"`
+	Menu     string `json:"menu"`
+	Button   string `json:"button"`
 }
+
 func UpdateItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form UpdateItemForm
 	var err error
@@ -244,12 +246,11 @@ func QueryItemHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	retData := gin.H{
 		"total": total,
-		"page": page,
-		"size": size,
-		"data": items,
+		"page":  page,
+		"size":  size,
+		"data":  items,
 	}
 
 	returnfun.ReturnOKJson(c, retData)
 	return
 }
-

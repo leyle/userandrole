@@ -15,24 +15,26 @@ import (
 
 // 程序启动时，初始化出来的
 const DefaultRoleName = "注册用户默认角色"
+
 var DefaultRoleId = ""
 
 const (
-	AdminRoleName = "admin"
+	AdminRoleName       = "admin"
 	AdminPermissionName = "admin"
-	AdminItemName = "admin:"
+	AdminItemName       = "admin:"
 )
 
 // 定义不可修改的 item / permissid / role Id
 const (
-	IdTypeItem = "item"
+	IdTypeItem       = "item"
 	IdTypePermission = "permission"
-	IdTypeRole = "role"
+	IdTypeRole       = "role"
 )
+
 var (
-	CanNotModifyItemIds []string
+	CanNotModifyItemIds       []string
 	CanNotModifyPermissionIds []string
-	CanNotMidifyRoleIds []string
+	CanNotMidifyRoleIds       []string
 )
 
 var AdminItemNames = []string{
@@ -45,26 +47,36 @@ var AdminItemNames = []string{
 	AdminItemName + "HEAD",
 }
 
+// 数据来源，一种是系统内置，一种是用户定义，用户定义可以自定义标签，也可以使用默认值
+const (
+	DataFromSystem = "SYSTEM" // 系统内置数据
+	DataFromUser   = "USER"   // 用户传递的
+)
+
 // item
 const CollectionNameItem = "item"
+
 var IKItem = &dbandmq.IndexKey{
-	Collection:    CollectionNameItem,
-	SingleKey:     []string{"name", "method", "path", "deleted"},
-	UniqueKey:     []string{"name"},
+	Collection: CollectionNameItem,
+	SingleKey:  []string{"name", "method", "path", "deleted"},
+	UniqueKey:  []string{"name"},
 }
+
 type Item struct {
-	Id string `json:"id" bson:"_id"`
+	Id   string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`
 	// api
-	Method string `json:"method" bson:"method"`
-	Path string `json:"path" bson:"path"`
+	Method   string `json:"method" bson:"method"`
+	Path     string `json:"path" bson:"path"`
 	Resource string `json:"resource" bson:"resource"` // 可以为空
 
 	// html
-	Menu string `json:"menu" bson:"menu"`
+	Menu   string `json:"menu" bson:"menu"`
 	Button string `json:"button" bson:"button"`
 
 	Deleted bool `json:"deleted" bson:"deleted"`
+
+	DataFrom string `json:"-" bson:"dataFrom"`
 
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
@@ -74,23 +86,27 @@ type Item struct {
 
 // permission
 const CollectionPermissionName = "permission"
+
 var IKPermission = &dbandmq.IndexKey{
-	Collection:    CollectionPermissionName,
-	SingleKey:     []string{"name", "itemIds", "deleted"},
-	UniqueKey:     []string{"name"},
+	Collection: CollectionPermissionName,
+	SingleKey:  []string{"name", "itemIds", "deleted"},
+	UniqueKey:  []string{"name"},
 }
+
 type Permission struct {
-	Id string `json:"id" bson:"_id"`
+	Id   string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`
 
 	ItemIds []string `json:"-" bson:"itemIds"`
-	Items []*Item `json:"items" bson:"-"`
+	Items   []*Item  `json:"items" bson:"-"`
 
 	// html
-	Menu string `json:"menu" bson:"menu"`
+	Menu   string `json:"menu" bson:"menu"`
 	Button string `json:"button" bson:"button"`
 
-	Deleted bool `json:"deleted" bson:"deleted"`
+	Deleted  bool   `json:"deleted" bson:"deleted"`
+	DataFrom string `json:"-" bson:"dataFrom"`
+
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`
@@ -99,26 +115,30 @@ type Permission struct {
 
 // role
 const CollectionNameRole = "role"
+
 var IKRole = &dbandmq.IndexKey{
-	Collection:    CollectionNameRole,
-	SingleKey:     []string{"name", "permissionIds", "deleted"},
-	UniqueKey:     []string{"name"},
+	Collection: CollectionNameRole,
+	SingleKey:  []string{"name", "permissionIds", "deleted"},
+	UniqueKey:  []string{"name"},
 }
+
 type Role struct {
-	Id string `json:"id" bson:"_id"`
+	Id   string `json:"id" bson:"_id"`
 	Name string `json:"name" bson:"name"`
 
-	PermissionIds []string `json:"-" bson:"permissionIds"`
-	Permissions []*Permission `json:"permissions" bson:"-"`
+	PermissionIds []string      `json:"-" bson:"permissionIds"`
+	Permissions   []*Permission `json:"permissions" bson:"-"`
 
 	// html
-	Menu string `json:"menu" bson:"menu"`
+	Menu   string `json:"menu" bson:"menu"`
 	Button string `json:"button" bson:"button"`
 
 	// 包含的下属 role 列表，当前 role 所属用户可以给自己的下属用户赋予的权限
 	ChildrenRoles []*ChildRole `json:"childrenRole" bson:"childrenRole"`
 
-	Deleted bool `json:"deleted" bson:"deleted"`
+	Deleted  bool   `json:"deleted" bson:"deleted"`
+	DataFrom string `json:"-" bson:"dataFrom"`
+
 	History []*ophistory.OperationHistory `json:"history" bson:"history"`
 
 	CreateT *util.CurTime `json:"-" bson:"createT"`
@@ -127,7 +147,7 @@ type Role struct {
 
 // 记录值，归属于某个上层 role
 type ChildRole struct {
-	Id string `json:"id" bson:"id"` // role Id
+	Id   string `json:"id" bson:"id"`     // role Id
 	Name string `json:"name" bson:"name"` // role name，展示查看用
 }
 
@@ -152,7 +172,7 @@ func GetItemByName(db *dbandmq.Ds, name string) (*Item, error) {
 	err := db.C(CollectionNameItem).Find(f).One(&item)
 	if err != nil && err != mgo.ErrNotFound {
 		Logger.Errorf("", "根据name[%s]读取 role item 失败, %s", err.Error())
-		return nil,  err
+		return nil, err
 	}
 
 	return item, nil

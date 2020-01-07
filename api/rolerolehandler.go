@@ -16,11 +16,12 @@ import (
 
 // 新建 role
 type CreateRoleForm struct {
-	Name string `json:"name" binding:"required"`
-	Pids []string `json:"pids"` // 可以没有值
-	Menu string `json:"menu"`
-	Button string `json:"button"`
+	Name   string   `json:"name" binding:"required"`
+	Pids   []string `json:"pids"` // 可以没有值
+	Menu   string   `json:"menu"`
+	Button string   `json:"button"`
 }
+
 func CreateRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form CreateRoleForm
 	err := c.BindJSON(&form)
@@ -45,6 +46,7 @@ func CreateRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 		PermissionIds: form.Pids,
 		Menu:          form.Menu,
 		Button:        form.Button,
+		DataFrom:      roleapp.DataFromUser,
 		Deleted:       false,
 		CreateT:       util.GetCurTime(),
 	}
@@ -70,6 +72,7 @@ func CreateRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 type AddPToRoleForm struct {
 	Pids []string `json:"pids" binding:"required"`
 }
+
 func AddPermissionsToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form AddPToRoleForm
 	err := c.BindJSON(&form)
@@ -114,6 +117,7 @@ func AddPermissionsToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 type RemovePFromRoleForm struct {
 	Pids []string `json:"pids" binding:"required"`
 }
+
 func RemovePermissionsFromRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form RemovePFromRoleForm
 	err := c.BindJSON(&form)
@@ -169,10 +173,11 @@ func RemovePermissionsFromRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 // 修改 role 信息
 type UpdateRoleForm struct {
-	Name string `json:"name" binding:"required"`
-	Menu string `json:"menu"`
+	Name   string `json:"name" binding:"required"`
+	Menu   string `json:"menu"`
 	Button string `json:"button"`
 }
+
 func UpdateRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form UpdateRoleForm
 	err := c.BindJSON(&form)
@@ -193,9 +198,9 @@ func UpdateRoleInfoHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	update := bson.M{
 		"$set": bson.M{
-			"name": form.Name,
-			"menu": form.Menu,
-			"button": form.Button,
+			"name":    form.Name,
+			"menu":    form.Menu,
+			"button":  form.Button,
 			"deleted": false, // 重新上线
 			"updateT": util.GetCurTime(),
 		},
@@ -253,6 +258,7 @@ func DeleteRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 type ChildRoleForm struct {
 	Roles []*roleapp.ChildRole `json:"childrenRole" binding:"required"`
 }
+
 func AddChildRoleToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form ChildRoleForm
 	err := c.BindJSON(&form)
@@ -330,7 +336,7 @@ func AddChildRoleToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	update := bson.M{
 		"$set": bson.M{
 			"childrenRole": allRoles,
-			"updateT": util.GetCurTime(),
+			"updateT":      util.GetCurTime(),
 		},
 		"$push": bson.M{
 			"history": opHis,
@@ -341,7 +347,7 @@ func AddChildRoleToRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	middleware.StopExec(err)
 
 	retData := gin.H{
-		"validRoles": validRoles,
+		"validRoles":   validRoles,
 		"invalidRoles": invalidRoles,
 	}
 
@@ -401,7 +407,7 @@ func DelChildRoleFromRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 	update := bson.M{
 		"$set": bson.M{
 			"childrenRole": remainRoles,
-			"updateT": util.GetCurTime(),
+			"updateT":      util.GetCurTime(),
 		},
 		"$push": bson.M{
 			"history": opHis,
@@ -480,9 +486,9 @@ func QueryRoleHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	retData := gin.H{
 		"total": total,
-		"page": page,
-		"size": size,
-		"data": roles,
+		"page":  page,
+		"size":  size,
+		"data":  roles,
 	}
 
 	returnfun.ReturnOKJson(c, retData)

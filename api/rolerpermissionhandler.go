@@ -16,11 +16,12 @@ import (
 
 // 新建权限
 type CreatePermissionForm struct {
-	Name string `json:"name" binding:"required"`
+	Name    string   `json:"name" binding:"required"`
 	ItemIds []string `json:"itemIds"` // 不是必选的
-	Menu string `json:"menu"`
-	Button string `json:"button"`
+	Menu    string   `json:"menu"`
+	Button  string   `json:"button"`
 }
+
 func CreatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form CreatePermissionForm
 	err := c.BindJSON(&form)
@@ -39,13 +40,14 @@ func CreatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	}
 
 	permission := &roleapp.Permission{
-		Id:      util.GenerateDataId(),
-		Name:    form.Name,
-		ItemIds: form.ItemIds, // 不检查 itemIds 的合法性
-		Menu:    form.Menu,
-		Button:  form.Button,
-		Deleted: false,
-		CreateT: util.GetCurTime(),
+		Id:       util.GenerateDataId(),
+		Name:     form.Name,
+		ItemIds:  form.ItemIds, // 不检查 itemIds 的合法性
+		Menu:     form.Menu,
+		Button:   form.Button,
+		DataFrom: roleapp.DataFromUser,
+		Deleted:  false,
+		CreateT:  util.GetCurTime(),
 	}
 	permission.UpdateT = permission.CreateT
 
@@ -68,6 +70,7 @@ func CreatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 type AddItemsToPermissionForm struct {
 	ItemIds []string `json:"itemIds" binding:"required"`
 }
+
 func AddItemToPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form AddItemsToPermissionForm
 	err := c.BindJSON(&form)
@@ -112,6 +115,7 @@ func AddItemToPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 type RemoveItemFromPermissionForm struct {
 	ItemIds []string `json:"itemIds" binding:"required"`
 }
+
 func RemoveItemFromPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form RemoveItemFromPermissionForm
 	err := c.BindJSON(&form)
@@ -170,10 +174,11 @@ func RemoveItemFromPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 // 修改权限基础信息
 type UpdatePermissionForm struct {
-	Name string `json:"name" binding:"required"`
-	Menu string `json:"menu"`
+	Name   string `json:"name" binding:"required"`
+	Menu   string `json:"menu"`
 	Button string `json:"button"`
 }
+
 func UpdatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 	var form UpdatePermissionForm
 	err := c.BindJSON(&form)
@@ -195,9 +200,9 @@ func UpdatePermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	update := bson.M{
 		"$set": bson.M{
-			"name": form.Name,
-			"menu": form.Menu,
-			"button": form.Button,
+			"name":    form.Name,
+			"menu":    form.Menu,
+			"button":  form.Button,
 			"deleted": false, // 如果被删除过，这里相当于重新上线
 			"updateT": util.GetCurTime(),
 		},
@@ -312,9 +317,9 @@ func QueryPermissionHandler(c *gin.Context, ds *dbandmq.Ds) {
 
 	retData := gin.H{
 		"total": total,
-		"page": page,
-		"size": size,
-		"data": ps,
+		"page":  page,
+		"size":  size,
+		"data":  ps,
 	}
 	returnfun.ReturnOKJson(c, retData)
 	return

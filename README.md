@@ -1,5 +1,15 @@
 [TOC]
 
+## 使用说明
+
+### API 路径前缀
+
+一般来说，路径会是类似于 **/api/user/user/:id** 这样的结构，但是为了与其他模块的结合以及做反向代理流量分发，需要扩展路径前缀。比如路径会改成 **/api/yyapi/user/user/:id**，这里 api 路径从 **/api**变成了 **/api/yyapi**，这里就是路径前缀。
+
+为了方便前端用户统一管理 userandrole 相关的api，这里就变成了 host/api_prefix + uri 的形式，方便统一管理。
+
+---
+
 ## 用户/角色/验证
 
 管理员 指的是拥有相关角色的用户。
@@ -174,6 +184,24 @@ setHeader("token", "someValue")
 ```json
 // GET /api/user/user/:id
 // 路径最后是要读取的用户的 id
+```
+
+---
+
+#### 根据微信 openid 读取用户详细信息
+
+```json
+// GET /api/user/wx/openid/:id
+// 路径中的 id 指的是 openid
+```
+
+---
+
+#### 根据 phone 读取用户详细信息
+
+```json
+// GET /api/user/phone/:id
+// 路径中的 id 指的是 phone 号码
 ```
 
 ---

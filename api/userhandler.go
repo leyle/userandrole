@@ -540,12 +540,13 @@ func LoginByWeChatXiaoChengXuHandler(c *gin.Context, uo *UserOption) {
 // 微信小程序完善相关 profile 信息
 type XiaoChengXuProfileForm struct {
 	Nickname string `json:"nickname"`
-	Sex int32 `json:"sex"`
-	Avatar string `json:"avatar"`
-	City string `json:"city"`
+	Sex      int32  `json:"sex"`
+	Avatar   string `json:"avatar"`
+	City     string `json:"city"`
 	Province string `json:"province"`
-	Country string `json:"country"`
+	Country  string `json:"country"`
 }
+
 func FullXiaoChengXuProfileHandler(c *gin.Context, uo *UserOption) {
 	var form XiaoChengXuProfileForm
 	err := c.BindJSON(&form)
@@ -564,12 +565,12 @@ func FullXiaoChengXuProfileHandler(c *gin.Context, uo *UserOption) {
 	update := bson.M{
 		"$set": bson.M{
 			"nickname": form.Nickname,
-			"sex": form.Sex,
-			"avatar": form.Avatar,
-			"city": form.City,
+			"sex":      form.Sex,
+			"avatar":   form.Avatar,
+			"city":     form.City,
 			"province": form.Province,
-			"country": form.Country,
-			"updateT": util.GetCurTime(),
+			"country":  form.Country,
+			"updateT":  util.GetCurTime(),
 		},
 	}
 
@@ -1155,7 +1156,7 @@ func ResetPasswdHandler(c *gin.Context, uo *UserOption) {
 	return
 }
 
-// 读取某个用户详细信息
+// 根据 userId 读取某个用户详细信息
 func GetUserInfoHandler(c *gin.Context, uo *UserOption) {
 	userId := c.Param("id")
 
@@ -1176,6 +1177,66 @@ func GetUserInfoHandler(c *gin.Context, uo *UserOption) {
 
 	retData := gin.H{
 		"user":    user,
+		"roles":   uwr.Roles,
+		"menus":   uwr.Menus,
+		"buttons": uwr.Buttons,
+	}
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 根据微信 openId 读取用户信息
+func GetUserByWeChatOpenIdHandler(c *gin.Context, uo *UserOption) {
+	openId := c.Param("id")
+
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	dbuser, err := userapp.GetUserByOpenId(db, openId)
+	middleware.StopExec(err)
+	if dbuser == nil {
+		returnfun.ReturnErrJson(c, "无指定 openId 的用户信息")
+		return
+	}
+
+	userId := dbuser.Id
+
+	// 权限
+	uwr, err := userandrole.GetUserRoles(db, userId)
+	middleware.StopExec(err)
+
+	retData := gin.H{
+		"user":    dbuser,
+		"roles":   uwr.Roles,
+		"menus":   uwr.Menus,
+		"buttons": uwr.Buttons,
+	}
+	returnfun.ReturnOKJson(c, retData)
+	return
+}
+
+// 根据 phone 读取用户信息
+func GetUserByPhoneHandler(c *gin.Context, uo *UserOption) {
+	phone := c.Param("id")
+
+	db := uo.Ds.CopyDs()
+	defer db.Close()
+
+	dbuser, err := userapp.GetUserByPhone(db, phone)
+	middleware.StopExec(err)
+	if dbuser == nil {
+		returnfun.ReturnErrJson(c, "无指定 phone 的用户信息")
+		return
+	}
+
+	userId := dbuser.Id
+
+	// 权限
+	uwr, err := userandrole.GetUserRoles(db, userId)
+	middleware.StopExec(err)
+
+	retData := gin.H{
+		"user":    dbuser,
 		"roles":   uwr.Roles,
 		"menus":   uwr.Menus,
 		"buttons": uwr.Buttons,

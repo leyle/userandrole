@@ -193,6 +193,16 @@ func UserRouter(uo *UserOption, g *gin.RouterGroup) {
 			GetUserInfoHandler(c, uo)
 		})
 
+		// 根据 openid 读取用户信息
+		userR.GET("/wx/openid/:id", func(c *gin.Context) {
+			GetUserByWeChatOpenIdHandler(c, uo)
+		})
+
+		// 根据 phone 读取用户信息
+		userR.GET("/phone/:id", func(c *gin.Context) {
+			GetUserByPhoneHandler(c, uo)
+		})
+
 		// 查看用户的登录历史记录
 		userR.GET("/loginhistory/:id", func(c *gin.Context) {
 			GetUserLoginHistoryHandler(c, uo)

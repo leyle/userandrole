@@ -226,9 +226,15 @@ func RbacHelper(db *dbandmq.Ds, uriPrefix string) error {
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),
-			Name:   "查看指定id用户登录历史",
+			Name:   "根据微信openid读取用户信息",
 			Method: "GET",
-			Path:   uriPrefix + "/user/loginhistory/*",
+			Path:   uriPrefix + "/user/wx/openid/*",
+		},
+		&roleapp.Item{
+			Id:     util.GenerateDataId(),
+			Name:   "根据phone读取用户信息",
+			Method: "GET",
+			Path:   uriPrefix + "/user/phone/*",
 		},
 		&roleapp.Item{
 			Id:     util.GenerateDataId(),

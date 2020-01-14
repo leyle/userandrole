@@ -34,6 +34,8 @@ func Auth(c *gin.Context) {
 		return
 	}
 
+	// 判断是否是 api token，如果是，直接返回有权限的操作
+
 	result := auth.AuthLoginAndRole(AuthOption, token, c.Request.Method, c.Request.URL.Path, "")
 	debugPrintUserRoleInfo(c, result)
 

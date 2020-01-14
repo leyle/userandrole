@@ -21,6 +21,15 @@ mongodb:
   passwd: "test"
   database: "testrole"
 
+# api token 分为三个级别
+# normal - 最低级别调用，仅包含部分 api 调用权限
+# high - 高级别，除了极个别权限外，拥有所有的权限
+# root - 最高级别，拥有所有的 api 权限
+apitoken:
+  normal: ""
+  high: ""
+  root: ""
+
 wechat:
   app:
     appid: "wxdc1684c9e82c42b4"

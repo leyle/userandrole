@@ -463,6 +463,16 @@ func GetUserFullInfoById(db *dbandmq.Ds, userId string) (*User, error) {
 	wca, _ := getWeChatAuthByUserId(db, userId)
 	user.WeChatAuth = wca
 
+	if user.Name == "" {
+		if idp != nil {
+			user.Name = idp.LoginId
+		} else if pa != nil {
+			user.Name = pa.Phone
+		} else if wca != nil {
+			user.Name = wca.Nickname
+		}
+	}
+
 	return user, nil
 }
 

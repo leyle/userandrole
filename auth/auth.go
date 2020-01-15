@@ -112,9 +112,10 @@ func AuthLoginAndRole(ao *Option, token, method, uri, resource string) *AuthResu
 
 	// 检查是否需要强制修改密码
 	// 账户密码登录方式，如果 init 是 true，就需要强制修改密码
-	const changePasswdUri = "/api/sso/user/idpasswd/changepasswd"
+	const changePasswdUri = "/user/idpasswd/changepasswd"
 	if user.LoginType == userapp.LoginTypeIdPasswd && user.IdPasswd.Init {
-		if uri != changePasswdUri {
+		// 使用部分匹配模式
+		if !strings.HasSuffix(uri, changePasswdUri) {
 			ar.Result = AuthResultNeedChangePasswd
 			return ar
 		}

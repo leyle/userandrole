@@ -580,6 +580,15 @@ func FullXiaoChengXuProfileHandler(c *gin.Context, uo *UserOption) {
 	err = db.C(userapp.CollectionNameWeChat).Update(f, update)
 	middleware.StopExec(err)
 
+	// 刷新 user 表数据
+	updateUser := bson.M{
+		"$set": bson.M{
+			"name": form.Nickname,
+		},
+	}
+	err = db.C(userapp.CollectionNameUser).UpdateId(curUser.Id, updateUser)
+	middleware.StopExec(err)
+
 	// 刷新 token
 	wxInfo := &oauth.UserInfo{
 		OpenID: curUser.WeChatAuth.OpenId,

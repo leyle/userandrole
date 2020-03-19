@@ -4,7 +4,7 @@
 
 ### API 路径前缀
 
-一般来说，路径会是类似于 **/api/user/user/:id** 这样的结构，但是为了与其他模块的结合以及做反向代理流量分发，需要扩展路径前缀。比如路径会改成 **/api/yyapi/user/user/:id**，这里 api 路径从 **/api**变成了 **/api/yyapi**，这里就是路径前缀。
+一般来说，路径会是类似于 **/api/sso/user/user/:id** 这样的结构，但是为了与其他模块的结合以及做反向代理流量分发，需要扩展路径前缀。比如路径会改成 **/api/sso/yyapi/user/user/:id**，这里 api 路径从 **/api**变成了 **/api/sso/yyapi**，这里就是路径前缀。
 
 为了方便前端用户统一管理 userandrole 相关的api，这里就变成了 host/api_prefix + uri 的形式，方便统一管理。
 
@@ -50,11 +50,12 @@ setHeader("token", "someValue")
 
 #### AuthResult 中的 result 值
 
-| 值（整数） | 意义                                |
-| ---------- | ----------------------------------- |
-| 0          | token 错误/无效（401）              |
-| 1          | token正确u，但无相关操作权限（403） |
-| 9          | 验证成功，token有效，有对应的权限   |
+| 值（整数） | 意义                                                         |
+| ---------- | ------------------------------------------------------------ |
+| 0          | token 错误/无效（401）                                       |
+| 1          | token正确，但无相关操作权限（403）                           |
+| 2          | token 正确，但是采用账户密码登录方式，密码被初始化了，需要修改密码才能使用其他功能 |
+| 9          | 验证成功，token有效，有对应的权限                            |
 
 ---
 
@@ -63,7 +64,7 @@ setHeader("token", "someValue")
 #### 管理员创建一个账户密码登录方式的账户
 
 ```json
-// POST /api/user/idpasswd
+// POST /api/sso/user/idpasswd
 // roleIds 中的值为调用接口用户所包含的角色列表和 childrenRole 列表值
 {
   "loginId": "testuser",
@@ -80,7 +81,7 @@ setHeader("token", "someValue")
 #### 用户修改自己的密码
 
 ```json
-// POST /api/user/idpasswd/changepasswd
+// POST /api/sso/user/idpasswd/changepasswd
 {
   "passwd": "some new passwd"
 }
@@ -102,7 +103,7 @@ setHeader("token", "someValue")
 // 标记原 user 数据为被合并的数据，标记为失效
 // 所以，如果想要做绑定操作，并且有资源关联，那么最好的是拉起微信授权后，立刻绑定手机号
 // 调用者获取到成功响应后，就应该重新拉去登录，因为之前的信息会被删除
-// POST /api/user/wx/bindphone
+// POST /api/sso/user/wx/bindphone
 {
   "phone": "13812345678",
   "code": "123456"
@@ -114,7 +115,7 @@ setHeader("token", "someValue")
 #### 用户读取自己的信息（包含登录信息和角色信息）
 
 ```json
-// GET /api/user/me
+// GET /api/sso/user/me
 ```
 
 ---
@@ -122,7 +123,7 @@ setHeader("token", "someValue")
 #### 退出登录
 
 ```json
-// POST/GET /api/user/logout
+// POST/GET /api/sso/user/logout
 // 需要在登录状态下调用此接口
 ```
 
@@ -131,7 +132,7 @@ setHeader("token", "someValue")
 #### 管理员创建一个手机号登录账户
 
 ```json
-// POST /api/user/phone
+// POST /api/sso/user/phone
 {
   "phone": "13812345678",
   "avatar": "http://some.com/avatar.jpg",
@@ -144,7 +145,7 @@ setHeader("token", "someValue")
 #### 管理员封禁用户
 
 ```json
-// POST /api/user/ban
+// POST /api/sso/user/ban
 // t 指的是封禁到期时间，精确到秒的时间戳
 {
   "userId": "userid",
@@ -158,7 +159,7 @@ setHeader("token", "someValue")
 #### 管理员解封用户
 
 ```json
-// POST /api/user/unban
+// POST /api/sso/user/unban
 {
   "userId": "userid",
   "reason": "解封理由"
@@ -170,7 +171,7 @@ setHeader("token", "someValue")
 #### 管理员替用户重置密码
 
 ```json
-// POST /api/user/idpasswd/resetpasswd
+// POST /api/sso/user/idpasswd/resetpasswd
 // 注意这里和用户自己修改密码的区别
 {
   "userId": "userId"
@@ -182,7 +183,7 @@ setHeader("token", "someValue")
 #### 管理员读取某个用户的详细信息
 
 ```json
-// GET /api/user/user/:id
+// GET /api/sso/user/user/:id
 // 路径最后是要读取的用户的 id
 ```
 
@@ -191,7 +192,7 @@ setHeader("token", "someValue")
 #### 根据微信 openid 读取用户详细信息
 
 ```json
-// GET /api/user/wx/openid/:id
+// GET /api/sso/user/wx/openid/:id
 // 路径中的 id 指的是 openid
 ```
 
@@ -200,7 +201,7 @@ setHeader("token", "someValue")
 #### 根据 phone 读取用户详细信息
 
 ```json
-// GET /api/user/phone/:id
+// GET /api/sso/user/phone/:id
 // 路径中的 id 指的是 phone 号码
 ```
 
@@ -209,7 +210,7 @@ setHeader("token", "someValue")
 #### 管理员读取某个用户的登录历史记录
 
 ```json
-// GET /api/user/loginhistory/:id?page=1
+// GET /api/sso/user/loginhistory/:id?page=1
 // 路径中的 id 指的是用户 id，page 指的是读取第几页的数据
 // 单页返回记录为 10 条数据，返回数据中无 total 字段，根据返回的数据是否为空（或是否size==10）来判断是否读取完毕
 ```
@@ -219,7 +220,7 @@ setHeader("token", "someValue")
 #### 管理员搜索用户列表
 
 ```json
-// GET /api/user/users
+// GET /api/sso/user/users
 // 支持的 url 参数如下
 // loginid - 登录id，支持部分匹配
 // phone - 支持部分匹配
@@ -235,7 +236,7 @@ setHeader("token", "someValue")
 #### 读取微信 appid
 
 ```json
-// GET /api/user/wx/appid?platform=H5
+// GET /api/sso/user/wx/appid?platform=H5
 // platform 可选值 H5 / APP / XIAOCHENGXU
 ```
 
@@ -244,7 +245,7 @@ setHeader("token", "someValue")
 #### 用户使用账户密码登录
 
 ```json
-// POST /api/user/idpasswd/login
+// POST /api/sso/user/idpasswd/login
 // platform 可选值  H5 / PC / ANDROID / IOS
 {
   "loginId": "testauser",
@@ -260,7 +261,7 @@ setHeader("token", "someValue")
 #### 微信登录
 
 ```json
-// POST /api/user/wx/login
+// POST /api/sso/user/wx/login
 // platform 可选值 H5 - 网页拉起微信授权 / APP - app 微信授权方式 //  XIAOCHENGXU - 微信小程序
 {
   "code": "wechat code....",
@@ -280,7 +281,7 @@ setHeader("token", "someValue")
 // 2.3 用户存在，profile 信息完整，可以使用
 
 // 根据 code 换取登录
-// POST /api/user/wx/xcxlogin
+// POST /api/sso/user/wx/xcxlogin
 {
   "code": "xxxx"
 }
@@ -292,7 +293,7 @@ setHeader("token", "someValue")
 
 // 传递 profile 信息
 // 调用本接口，需要在 header 设置 token，token 从上一步获取
-// POST /api/user/wx/xcxprofile
+// POST /api/sso/user/wx/xcxprofile
 {
   "nickname": "xxx",
   "sex": 0,
@@ -314,7 +315,7 @@ setHeader("token", "someValue")
 // 如果用户未注册过，验证通过后注册账户
 
 // 1、发送短信验证码
-// POST /api/user/phone/sendsms
+// POST /api/sso/user/phone/sendsms
 // 如果运行在 debug 模式，不会真发送短信，同时会返回 code
 // 否则会真实发送短信验证码，仅返回发送成功的提示给调用者
 {
@@ -322,7 +323,7 @@ setHeader("token", "someValue")
 }
 
 // 2、验证验证码有效性（及同步创建账户，如果不存在的话）
-// POST /api/user/phone/checksms
+// POST /api/sso/user/phone/checksms
 {
   "phone": "13812345678",
   "code": "123456",
@@ -335,7 +336,7 @@ setHeader("token", "someValue")
 #### token 有效性验证
 
 ```json
-// POST /api/user/token/check
+// POST /api/sso/user/token/check
 {
   "token": "some token value"
 }
@@ -349,12 +350,12 @@ setHeader("token", "someValue")
 #### 验证用户是否具有某接口的权限 auth
 
 ```json
-// POST /api/user/auth
+// POST /api/sso/user/auth
 // 本接口是提供给调用者一种验证机制，验证token对应的用户有无某接口权限
 {
   "token": "some token value",
   "method": "GET",
-  "path": "/api/course/info/abcdefghi"
+  "path": "/api/sso/course/info/abcdefghi"
 }
 
 // 返回的数据包含了三部分，指示了 token 是否有效，用户是否具有权限
@@ -375,20 +376,20 @@ setHeader("token", "someValue")
 
 
 
-path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，就可以写成 `/api/user/*`即可。
+path 支持一个通配符 `*`，比如接口为 `/api/sso/user/:id`，配置时，就可以写成 `/api/sso/user/*`即可。
 
 ---
 
 #### 新建 item
 
 ```json
-// POST /api/role/item
+// POST /api/sso/role/item
 // name/method/path 为必输字段
 // name 字段不可重复
 {
   "name": "读取用户明细",
   "method": "GET",
-  "path": "/api/user/*",
+  "path": "/api/sso/user/*",
   "resource": "",
   "menu": "some menu",
   "button": "some button"
@@ -400,7 +401,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 修改 item / 取消删除item
 
 ```json
-// PUT /api/role/item/:id
+// PUT /api/sso/role/item/:id
 // 路径中的 id 指需要被修改的 item id
 // 修改是一个全量操作，即使数据没有发生变化，也需要传递回来，否则会被置空
 // name/method/path 为必输字段
@@ -409,7 +410,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 {
   "name": "读取用户明细",
   "method": "GET",
-  "path": "/api/user/*",
+  "path": "/api/sso/user/*",
   "resource": "",
   "menu": "some menu",
   "button": "some button"
@@ -421,7 +422,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 删除 item
 
 ```json
-// DELETE /api/role/item/:id
+// DELETE /api/sso/role/item/:id
 // 路径中的 id 指的是需要被删除的 item id
 // 删除是对数据做一个 deleted 标记
 // 已删除的数据，可以使用 修改 item 接口重新上线
@@ -432,7 +433,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 读取 item 明细
 
 ```json
-// GET /api/role/item/:id
+// GET /api/sso/role/item/:id
 // 路径中的 id 指的是需要读取信息的 item id
 ```
 
@@ -441,7 +442,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 搜索 item
 
 ```json
-// GET /api/role/items
+// GET /api/sso/role/items
 // 支持的 url 参数如下，这些参数可以同时传递
 // name - 支持部分匹配
 // path - 支持部分匹配
@@ -460,7 +461,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 新建 permission
 
 ```json
-// POST /api/role/permission
+// POST /api/sso/role/permission
 // name 为必输参数
 // itemIds 指的是 item 的 id，本接口中可以选择输入，也可以不输入
 {
@@ -476,7 +477,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 给 permission 添加多个 items
 
 ```json
-// POST /api/role/permission/:id/additems
+// POST /api/sso/role/permission/:id/additems
 // 路径中 id 指的是被修改的 permission 的 id
 // itemIds 指的是要添加的 item 的 id 列表
 {
@@ -489,7 +490,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 取消 permission 的某些 items
 
 ```json
-// POST /api/role/permission/:id/delitems
+// POST /api/sso/role/permission/:id/delitems
 // 路径中 id 指的是被修改的 permission 的 id
 // itemIds 指的是要添加的 item 的 id 列表
 {
@@ -502,7 +503,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 修改 permission 基本信息
 
 ```json
-// PUT /api/role/permission/:id
+// PUT /api/sso/role/permission/:id
 // 修改的是除了包含的 item id 外的其他信息
 {
   "name": "some name",
@@ -516,7 +517,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 删除 permission
 
 ```json
-// DELETE /api/role/permission/:id
+// DELETE /api/sso/role/permission/:id
 // 删除是标记操作
 // 已经删除的数据可以通过 修改 permission 基本信息 接口再重新上线
 ```
@@ -526,7 +527,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 读取 permission 明细
 
 ```json
-// GET /api/role/permission/:id
+// GET /api/sso/role/permission/:id
 ```
 
 ---
@@ -534,7 +535,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 搜索 permission 列表
 
 ```json
-// GET /api/role/permissions
+// GET /api/sso/role/permissions
 // 支持的 url 参数如下
 // 以下参数支持同时传递生效
 // name - 支持部分匹配
@@ -551,7 +552,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 新建 role
 
 ```json
-// POST /api/role/role
+// POST /api/sso/role/role
 // name 为必填，不可重复，其他为选填
 {
   "name": "role name",
@@ -566,7 +567,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 给 role 添加 permission
 
 ```json
-// POST /api/role/role/:id/addps
+// POST /api/sso/role/role/:id/addps
 // 路径中 id 指的是 role id
 // 可以同时添加多个 permission， pids 指的是 permission 的 id
 {
@@ -579,7 +580,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 取消 role 的 permission
 
 ```json
-// POST /api/role/role/:id/delps
+// POST /api/sso/role/role/:id/delps
 // 路径中的 id 指的是 role id
 // 可以同时删除多个 permission
 {
@@ -592,7 +593,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 修改 role 信息
 
 ```json
-// PUT /api/role/role/:id
+// PUT /api/sso/role/role/:id
 // 路径中的 id 指的是 role id
 {
   "name": "role name",
@@ -606,7 +607,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 删除 role 
 
 ```json
-// DELETE /api/role/role/:id
+// DELETE /api/sso/role/role/:id
 // 删除是标记操作
 // 已经删除的数据可以通过 修改 role信息 接口再重新上线
 ```
@@ -616,7 +617,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 给 role 添加 childrole
 
 ```json
-// POST /api/role/:id/addchildrole
+// POST /api/sso/role/:id/addchildrole
 // 此处添加的子角色，是为了辅助用户创建账户时，方便给账户赋予角色，赋予的角色只能是此处的角色
 // :id 指的是目标 role id
 {
@@ -638,7 +639,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 移除 role 的某些 childrole
 
 ```json
-// POST /api/user/:id/delchildrole
+// POST /api/sso/user/:id/delchildrole
 // 移除此 :id 角色包含的 children role
 {
   "childrenRole": [
@@ -659,7 +660,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 查看 role 信息
 
 ```json
-// GET /api/role/role/:id
+// GET /api/sso/role/role/:id
 ```
 
 ---
@@ -667,7 +668,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 ####  搜索 role
 
 ```json
-// GET /api/role/roles
+// GET /api/sso/role/roles
 // 支持的 url 参数如下
 // 以下参数支持同时传递生效
 // name - 支持部分匹配
@@ -694,7 +695,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 给 user 添加 roles
 
 ```json
-// POST /api/uwr/addroles
+// POST /api/sso/uwr/addroles
 // userId 与 roleIds 为必填
 {
   "userId": "userid",
@@ -709,7 +710,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 取消 user 的某些 roles
 
 ```json
-// POST /api/uwr/delroles
+// POST /api/sso/uwr/delroles
 // 两个参数都是必输
 {
   "userId": "userid",
@@ -722,7 +723,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 读取指定 user 的 roles
 
 ```json
-// GET /api/uwr/user/:id
+// GET /api/sso/uwr/user/:id
 // 路径中的 id 指的是 userid
 ```
 
@@ -731,7 +732,7 @@ path 支持一个通配符 `*`，比如接口为 `/api/user/:id`，配置时，�
 #### 搜索已经添加 role 的用户列表
 
 ```json
-// GET /api/uwr/users
+// GET /api/sso/uwr/users
 // 仅支持 page size 参数
 ```
 
